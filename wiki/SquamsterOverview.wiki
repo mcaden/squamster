@@ -1,25 +1,26 @@
 #summary An overview of the Squamster program.
+#labels Featured
 
-= Introduction =
+== Introduction ==
 
 Squamster is a mesh viewer with plans to grow into a fully-featured mesh painter.  The current version (0.1 Alpha) is fully functional as a mesh viewer.
 
 
-= Features =
+== Features ==
 
   *View Ogre .mesh files
   *View all animation states within a selected mesh
   *View all textures currently associated with a selected mesh
   *Full camera controls including zoom, rotate, and pan
 
-= Upcoming features = 
+== Upcoming features ==
 
   *Paint directly on a mesh
   *Customizable lights
   *Customizable brushes with opacity and feathering controls 
   *Additional paint tools like blur, sharpen, smudge, burn, and dodge.
 
-= Down the road = 
+== Down the road ==
 
   *Layers
   *Filters
