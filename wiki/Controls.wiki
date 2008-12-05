@@ -11,6 +11,6 @@ _Currently: none_
 View the panel on the right in order to load meshes, animations and textures.
 Within the render window:
 
-  *Rotate - Drag with the left mouse button
-  *Pan - Drag with the middle mouse button
-  *Zoom - Mouse Wheel
+  * Rotate - Drag with the left mouse button
+  * Pan - Drag with the middle mouse button
+  * Zoom - Mouse Wheel
