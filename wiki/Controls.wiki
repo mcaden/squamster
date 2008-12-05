@@ -1,0 +1,16 @@
+#summary Learning your way around in Squamster
+#labels Featured
+
+== Keyboard Controls ==
+
+_Currently: none_
+
+
+== Mouse Controls ==
+
+View the panel on the right in order to load meshes, animations and textures.
+Within the render window:
+
+  *Rotate - Drag with the left mouse button
+  *Pan - Drag with the middle mouse button
+  *Zoom - Mouse Wheel
