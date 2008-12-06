@@ -27,7 +27,7 @@ namespace Squamster
 
             foreach (String group in groups)
             {
-                ResourceGroupManager.Singleton.InitialiseResourceGroup(group);
+                //ResourceGroupManager.Singleton.InitialiseResourceGroup(group);
                 StringVector newMeshes = ResourceGroupManager.Singleton.FindResourceNames(group, "*.mesh");
                 foreach (String newMesh in newMeshes)
                 {

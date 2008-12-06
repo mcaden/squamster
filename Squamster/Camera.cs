@@ -22,6 +22,10 @@ namespace Squamster
 
         SceneManager mSceneMgr;
 
+        const float defaultCameraNearDistance = 200;
+        const float defaultCameraFarDistance = 400000;
+        const float defaultZoomSlowdownDistance = 200;
+
         float mTightness; // Determines the movement of the camera - 1 means tight movement, while 0 means no movement
         float scale = 200f; //Orthographic Zoom
 
@@ -32,8 +36,8 @@ namespace Squamster
 	        mSceneMgr = Root.Singleton.GetSceneManager( sceneMgrName );
             mCamera = mSceneMgr.GetCamera( camName );
             mCamera.ProjectionType = ProjectionType.PT_ORTHOGRAPHIC;
-            mCamera.FarClipDistance = 500000;
-            mCamera.NearClipDistance = 200; 
+            mCamera.FarClipDistance = defaultCameraFarDistance;
+            mCamera.NearClipDistance = defaultCameraNearDistance; 
             
             mSceneMgr.AmbientLight = new Mogre.ColourValue(0.5f,0.5f,0.5f);
             mLight = mSceneMgr.CreateLight("Light");
@@ -64,6 +68,7 @@ namespace Squamster
 
 
 	        mCameraNode.AttachObject(mCamera);
+            
         }
 
         ~ExtendedCamera() 
@@ -86,8 +91,8 @@ namespace Squamster
             mSpinNode.Position = newPosition;
             mSpinNode.ResetOrientation();
             mPitchNode.ResetOrientation();
-            scale = 200f;
-            mCamera.NearClipDistance = 200f;
+            scale = defaultCameraNearDistance;
+            mCamera.NearClipDistance = defaultCameraNearDistance;
             instantUpdate();
         }
 
@@ -103,9 +108,9 @@ namespace Squamster
 
         public void cameraZoom(float zoomFactor)
         {
-            if (scale < 200)
+            if (scale < defaultZoomSlowdownDistance)
             {
-                scale = scale + (zoomFactor * -1 * scale / 200);
+                scale = scale + (zoomFactor * -1 * scale / defaultZoomSlowdownDistance);
             }
             else
             {
@@ -127,6 +132,14 @@ namespace Squamster
         {
             mSightNode.Translate(moveAmount, Node.TransformSpace.TS_LOCAL);
             mSpinNode.Translate(moveAmount, Node.TransformSpace.TS_LOCAL);
+        }
+
+        public Camera getOgreCamera
+        { 
+            get
+            {
+                return mCamera;
+            }
         }
 
         public void cameraPitch(Degree pitchAmount)
