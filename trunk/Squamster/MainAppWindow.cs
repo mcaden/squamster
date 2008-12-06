@@ -5,8 +5,8 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
-using Mogre;
 using MOIS;
+using Mogre;
 
 namespace Squamster
 {
@@ -14,13 +14,18 @@ namespace Squamster
     {
         const int tickInterval = 40; //(milliseconds between ticks) 40 = ~25 FPS - This is the camera/input update interval
         
-        public static Root mRoot;
-        public static SceneManager mSceneMgr;
+        public static Root mRoot = null;
+        public static SceneManager mSceneMgr = null;
+        public static Entity mCurrentEntity = null;
         RenderWindow mWindow;
         ExtendedCamera ExCamera;
-        bool mShutdownRequested = false;
+        bool mShutdownRequested = false;           
+        
+        public Rectangle2D mMiniScreen;
+        public SceneNode mMiniScreenNode;
 
         MeshLoader meshLoader;
+        StringVector materials = new StringVector();
 
         AnimationState mAnimState = null;
         bool playAnim = false;        
@@ -61,6 +66,7 @@ namespace Squamster
 
         public void Init()
         {
+            
             // Create root object
             mRoot = new Root();
 
@@ -148,8 +154,78 @@ namespace Squamster
                 inputMouse.MouseReleased += new MOIS.MouseListener.MouseReleasedHandler(MouseReleased);
                 inputMouse.MouseMoved += new MOIS.MouseListener.MouseMovedHandler(MouseMotion);
             }
+
+
+            // RTT code
+            
+            TexturePtr texture = TextureManager.Singleton.CreateManual("RttTex", 
+                ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, TextureType.TEX_TYPE_2D,
+                mWindow.Width, mWindow.Height, 0, PixelFormat.PF_R8G8B8A8, (int)TextureUsage.TU_RENDERTARGET);
+
+            RenderTexture renderTexture = texture.GetBuffer().GetRenderTarget();
+
+            renderTexture.AddViewport( ExCamera.getOgreCamera );
+            renderTexture.GetViewport(0).SetClearEveryFrame(true);
+            renderTexture.GetViewport(0).BackgroundColour = ColourValue.White;
+            renderTexture.GetViewport(0).OverlaysEnabled = false;
+
+            mMiniScreen = new Rectangle2D(true);
+            mMiniScreen.SetCorners(0.5f, -0.5f, 1.0f, -1.0f);
+            mMiniScreen.BoundingBox = new AxisAlignedBox(-100000.0f * Mogre.Vector3.UNIT_SCALE, 100000.0f * Mogre.Vector3.UNIT_SCALE);
+
+            mMiniScreenNode = mSceneMgr.RootSceneNode.CreateChildSceneNode("MiniScreenNode");
+            mMiniScreenNode.AttachObject(mMiniScreen);
+
+            //Materials for the rtt Screen
+            MaterialPtr rttMaterial = MaterialManager.Singleton.Create("RttMat", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME);
+            rttMaterial.CreateTechnique().CreatePass();
+            rttMaterial.GetTechnique(0).GetPass(0).LightingEnabled = false;
+            rttMaterial.GetTechnique(0).GetPass(0).CreateTextureUnitState("RttTex");
+            mMiniScreen.SetMaterial("RttMat");
+
+
+            //Materials for the uv encoding
+            MaterialPtr uvEncodingMaterial = MaterialManager.Singleton.Create("uvEncodingMat", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME);
+            uvEncodingMaterial.CreateTechnique().CreatePass();
+            uvEncodingMaterial.GetTechnique(0).GetPass(0).LightingEnabled = false;
+            uvEncodingMaterial.GetTechnique(0).GetPass(0).CreateTextureUnitState("uvEncodingMat");
+            uvEncodingMaterial.GetTechnique(0).GetPass(0).SetFragmentProgram("uvEncode_ps");
+
+
+            renderTexture.PreRenderTargetUpdate += new RenderTargetListener.PreRenderTargetUpdateHandler( preRenderTargetUpdate );
+            renderTexture.PostRenderTargetUpdate += new RenderTargetListener.PostRenderTargetUpdateHandler( postRenderTargetUpdate );
+
+
             timer1.Start();            
         }
+
+ 
+        void preRenderTargetUpdate(RenderTargetEvent_NativePtr evt)
+        {
+            if (mCurrentEntity != null)
+            {
+                materials.Clear();
+                for (uint i = 0; i < mCurrentEntity.NumSubEntities; i++)
+                {
+                    materials.Add(mCurrentEntity.GetSubEntity(i).MaterialName);
+                    mCurrentEntity.GetSubEntity(i).MaterialName = "uvEncodingMat";
+                }
+            }
+            mMiniScreenNode.SetVisible(false);
+        }
+
+        void postRenderTargetUpdate(RenderTargetEvent_NativePtr evt)
+        {
+            if (mCurrentEntity != null)
+            {
+                for (uint i = 0; i < mCurrentEntity.NumSubEntities; i++)
+                {
+                    mCurrentEntity.GetSubEntity(i).MaterialName = materials[(int)i];
+                }
+            }
+            mMiniScreenNode.SetVisible(true);
+        }
+
 
         /// <summary>
         /// Finds all animations available to an entity and places them in the animation dropdown box.
@@ -188,14 +264,9 @@ namespace Squamster
         private void addMeshToList( String mesh )
         {
             meshListBox.Items.Add(mesh);
-            //if (meshListBox.Items.Count > 1)
-            //{
-                mSceneMgr.GetSceneNode(mesh).SetVisible(false);
-            //}
-            //else
-            //{
-            //    meshListBox.SetSelected(meshListBox.Items.IndexOf(mesh), true);
-            //}
+
+
+            mSceneMgr.GetSceneNode(mesh).SetVisible(false);
         }
 
 
@@ -219,6 +290,7 @@ namespace Squamster
             inputMouse.Capture();
 
             ExCamera.update();
+
             if (!mRoot.RenderOneFrame())
             {
                 mShutdownRequested = true;
@@ -247,6 +319,7 @@ namespace Squamster
 
         private void meshListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
+            LogManager.Singleton.LogMessage("-= Event: Mesh Selection =-");
             //Stats
             String meshName = "";
             StringVector textureNames = new StringVector();
@@ -264,7 +337,10 @@ namespace Squamster
                 }
                 else
                 {
+                    LogManager.Singleton.LogMessage("Active mesh found...");
                     Entity ent = (Entity)node.GetAttachedObject( node.Name );
+                    mCurrentEntity = ent;
+                    LogManager.Singleton.LogMessage("Resetting Animations...");
                     if (mAnimState != null)
                     {
                         mAnimState.TimePosition = 0;
@@ -277,9 +353,13 @@ namespace Squamster
                     meshName = node.Name;
                     if (ent.HasSkeleton)
                     {
+                        LogManager.Singleton.LogMessage("Populating Animations...");
                         animCount = populateAnims( ent );
                     }
+                    else
+                        LogManager.Singleton.LogMessage("No Animations...Moving on");
 
+                    LogManager.Singleton.LogMessage("Getting Materials, Textures...");
                     for (uint i = 0; i < ent.NumSubEntities; i++)
                     {
                         Material mat = ent.GetSubEntity(i).GetMaterial();
@@ -299,7 +379,7 @@ namespace Squamster
                         }
                     }
 
-
+                    LogManager.Singleton.LogMessage("Removing duplicate textures");
                     //remove duplicate texture files - same texture in different passes
                     for (int i = 0; i < textureNames.Count; i++)
                     {
@@ -315,9 +395,12 @@ namespace Squamster
                     ExCamera.recenterCamera(ent.BoundingBox.Center);
                 }
             }
+            
             if (meshName.Length > 0)
             {
                 //Mesh statistics
+                LogManager.Singleton.LogMessage("Compiling mesh stats...");
+                
                 String textureNameOutput = "";
                 String materialNameOutput = "";
                 foreach( String textureName in textureNames )
@@ -331,6 +414,7 @@ namespace Squamster
                 statsLabel.Text = "Name: " + meshName + "\nAnimation Count: " + animCount.ToString()
                         + materialNameOutput + textureNameOutput;
 
+                LogManager.Singleton.LogMessage("Adding Textures...");
                 //Texture information
                 imageList1.Images.Clear();
                 texList.Items.Clear();
@@ -362,6 +446,7 @@ namespace Squamster
                     pictureBox1.Image = pictureBox1.BackgroundImage;
                 }
             }
+            LogManager.Singleton.LogMessage("-= Mesh Selection Complete =-");
         }
         private void Btd_LoadAll_Click(object sender, EventArgs e)
         {
@@ -473,7 +558,7 @@ namespace Squamster
             // you can use e.state.Y.rel for reltive position, and e.state.Y.abs for absolute
             if (mouseInPanel1)
             {
-                if (e.state.ButtonDown(MouseButtonID.MB_Left))
+                if (e.state.ButtonDown(MouseButtonID.MB_Right))
                 {
                     if (e.state.X.rel != 0)
                     {
@@ -485,12 +570,15 @@ namespace Squamster
                         ExCamera.cameraPitch(new Degree(e.state.Y.rel));
                     }
                 }
-                if (e.state.Z.rel != 0)
+                else if (e.state.ButtonDown(MouseButtonID.MB_Left))
+                {
+                    
+                }
+                else if (e.state.Z.rel != 0)
                 {
                     ExCamera.cameraZoom(e.state.Z.rel * .1f);
                 }
-
-                if (e.state.ButtonDown(MouseButtonID.MB_Middle))
+                else if (e.state.ButtonDown(MouseButtonID.MB_Middle))
                 {
                     ExCamera.pan(new Mogre.Vector3(e.state.X.rel * .5f, e.state.Y.rel * .5f, 0));
                 }
@@ -530,7 +618,6 @@ namespace Squamster
         }
 
 #endregion
-
 
 
     }

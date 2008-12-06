@@ -576,17 +576,25 @@ material Material__25
 		}
 	}
 }
+fragment_program uvEncode_ps hlsl
+{
+	source uvEncode.hlsl
+	entry_point uvMap_fp
+	target ps_2_0
+	
+	default_params
+	{ 
+	}
+}
 material 2 - Default
 {
 	technique
 	{
 		pass
 		{
-
-			texture_unit
+      fragment_program_ref uvEncode_ps
 			{
-				texture MtlPlat2.jpg
-			}
+      }	
 		}
 	}
 }
@@ -652,7 +660,10 @@ material Examples/Ninja
 	{
 		pass
 		{
-		
+		  scene_blend alpha_blend
+		  fragment_program_ref uvEncode_ps
+			{
+      }	
 			texture_unit
 			{
 				texture nskingr.jpg
