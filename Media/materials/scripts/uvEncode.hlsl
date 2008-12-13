@@ -1,23 +1,7 @@
-/* ========================================================================== */
-/*                                                                            */
-/*   Filename.c                                                               */
-/*   (c) 2001 Author                                                          */
-/*                                                                            */
-/*   Description                                                              */
-/*                                                                            */
-/* ========================================================================== */
-
-
-float4 uvMap_fp(
+float4 uvMap_fp_hlsl(
       float2 uv  : TEXCOORD0
       ) : COLOR
 {
-  float4 color;
-  color.r = uv.x;
-  color.g = uv.y;
-  color.b = 0;
-  color.a = 256;
- 
+  float4 color = float4(uv.x, uv.y, 0, 1);
   return color;
 }
-

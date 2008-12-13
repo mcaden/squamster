@@ -1,4 +1,26 @@
-﻿using System.Reflection;
+﻿/*************************************************************************
+
+This file is part of Squamster - An Ogre /mesh viewer/painter for windows.
+ 
+ * Copyright ©  2008 - Katalyst Studios 
+
+    Squamster is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Squamster is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Squamster.  If not, see <http://www.gnu.org/licenses/>.
+
+
+**************************************************************************/
+
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -6,11 +28,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Squamster")]
-[assembly: AssemblyDescription("Ogre .mesh viewer for Windows")]
-[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyDescription("Ogre .mesh viewer/painter for Windows")]
+[assembly: AssemblyConfiguration("x86")]
 [assembly: AssemblyCompany("Katalyst Studios")]
 [assembly: AssemblyProduct("Squamster")]
-[assembly: AssemblyCopyright("Copyright ©  2008")]
+[assembly: AssemblyCopyright("Copyright © 2008")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +54,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.0.1.0")]
-[assembly: AssemblyFileVersion("0.0.1.0")]
+[assembly: AssemblyVersion("0.2.*")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
