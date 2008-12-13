@@ -14,3 +14,4 @@ Within the render window:
   * Rotate - Drag with the left mouse button
   * Pan - Drag with the middle mouse button
   * Zoom - Mouse Wheel
+  * Save Texture - CTRL+S  (Note: Currently saves to "Test.png" until "Save as..." functionality is implemented)
