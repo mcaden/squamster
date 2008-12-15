@@ -105,6 +105,7 @@ namespace Squamster
                     SceneNode meshNode = OgreForm.mSceneMgr.RootSceneNode.CreateChildSceneNode(meshName, new Mogre.Vector3(0, 0, 0));
                     Entity ent = OgreForm.mSceneMgr.CreateEntity(meshName, meshName);
                     meshNode.AttachObject(ent);
+                    meshNode.SetVisible(false);
                     isMeshAdded = true;
                 }
                 else

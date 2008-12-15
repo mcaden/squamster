@@ -152,8 +152,8 @@ namespace Squamster
 
         public void pan( Vector3 moveAmount )
         {
-            mSightNode.Translate(moveAmount, Node.TransformSpace.TS_LOCAL);
-            mSpinNode.Translate(moveAmount, Node.TransformSpace.TS_LOCAL);
+            mSightNode.Translate(moveAmount / (1000 / scale), Node.TransformSpace.TS_LOCAL);
+            mSpinNode.Translate(moveAmount / (1000 / scale), Node.TransformSpace.TS_LOCAL);
         }
 
         public Camera getOgreCamera
