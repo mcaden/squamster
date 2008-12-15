@@ -1,6 +1,4 @@
-﻿#define OGRE_MEMORY_TRACKER_DEBUG_MODE
-
-/*************************************************************************
+﻿/*************************************************************************
 
 This file is part of Squamster - An Ogre /mesh viewer/painter for windows.
 
@@ -34,24 +32,19 @@ namespace Squamster
 {
     public partial class OgreForm : Form
     {
+        const string brushPath = "../../media/brushes/";
 
-        const int tickInterval = 1;//40; //(milliseconds between ticks) 40 = ~25 FPS - This is the camera/input update interval
-        
         public static Root mRoot = null;
         public static SceneManager mSceneMgr = null;
         public static Entity mCurrentEntity = null;
-
-        ColourValue penColor = new ColourValue( 1,0,0,1);
 
         public static RenderWindow mWindow;
         public static ExtendedCamera ExCamera;
         bool mShutdownRequested = false;
 
         Painter meshPainter;
-
         MeshLoader meshLoader;
         
-
         AnimationState mAnimState = null;
         bool playAnim = false;        
 
@@ -59,6 +52,8 @@ namespace Squamster
         protected MOIS.Keyboard inputKeyboard;
         protected MOIS.Mouse inputMouse;
         bool mouseInPanel1 = false;
+
+        Mogre.Timer frameTimer = new Mogre.Timer();
 
         public OgreForm()
         {
@@ -85,6 +80,7 @@ namespace Squamster
             Show();
             while (mRoot != null && !mShutdownRequested)
             {
+                this.update();
                 Application.DoEvents();
                 System.Threading.Thread.Sleep(0);
             }
@@ -92,8 +88,7 @@ namespace Squamster
 
         public void Init()
         {
-            colorDialog1.Color = Color.FromArgb( (int)penColor.GetAsARGB() );
-            panel1.BackColor = colorDialog1.Color;
+            
             // Create root object
             mRoot = new Root();
             // Define Resources
@@ -183,10 +178,30 @@ namespace Squamster
             }
 
             meshPainter = new Painter();
+            colorDialog1.Color = Color.FromArgb((int)Painter.penColor.GetAsARGB());
+            colorSelector.BackColor = colorDialog1.Color;
 
+            System.IO.DirectoryInfo brushDir = new System.IO.DirectoryInfo(brushPath);
+            System.IO.FileInfo[] brushFiles = brushDir.GetFiles("*.png");
+            for (int i = 0; i < brushFiles.Length; i++ )
+            {
+                System.Drawing.Bitmap newBrush = new Bitmap(brushPath + brushFiles[i].Name);
+                brushPreviewList.Images.Add(brushFiles[i].Name, newBrush);
+                brushList.Items.Add("Brush " + i.ToString(), brushFiles[i].Name);
+                brushList.Items[i].Selected = false;
+                meshPainter.addBrush(newBrush);
+            }
+            brushList.Select();
+            brushList.SelectedItems.Clear();
+            brushList.Items[0].Selected = true;
+            meshPainter.currentBrush = 0;
+            
+            setViewMode(null, null);
 
+            meshPainter.BrushScale = (float)brushScaleControl.Value;
+            meshPainter.BrushOpacity = (float)brushOpacityControl.Value;
 
-            timer1.Start();            
+            frameTimer.Reset();            
         }
 
         /// <summary>
@@ -219,35 +234,21 @@ namespace Squamster
             loopAnim.Enabled = false;
             playAnim = false;
         }
-        /// <summary>
-        /// Adds a mesh's name to the mesh listbox
-        /// </summary>
-        /// <param name="mesh">The name of the mesh to add to the list.</param>
-        private void addMeshToList( String mesh )
-        {
-            LogManager.Singleton.LogMessage("Adding mesh: " + mesh + " to list...");
-            meshListBox.Items.Add(mesh);
-            try
-            {
-                mSceneMgr.GetSceneNode(mesh).SetVisible(false);
-                LogManager.Singleton.LogMessage("Mesh added to list!");
-            }
-            catch
-            {
-                LogManager.Singleton.LogMessage("Error: Mesh is in list, but couldn't find scenenode!");
-            }
-            
-        }
+        
+        
 
 
 
 #region Events
-        private void timer1_Tick(object sender, EventArgs e)
+
+        private void update()
         {
-            timer1.Interval = tickInterval;
+            float timeElapsed = ((float)frameTimer.Microseconds) / 1000000;
+            frameTimer.Reset();
+
             if (mAnimState != null && playAnim)
             {
-                mAnimState.AddTime( (float)tickInterval / 1000); //convert from milliseconds to seconds.
+                mAnimState.AddTime( timeElapsed); //convert from milliseconds to seconds.
                 if (mAnimState.HasEnded && !mAnimState.Loop)
                 {
                     Btn_Anim_Stop_Click(null, null);
@@ -260,46 +261,35 @@ namespace Squamster
             inputMouse.Capture();
             ExCamera.update();
 
-            if (inputKeyboard.IsKeyDown(KeyCode.KC_S) && ( inputKeyboard.IsKeyDown(KeyCode.KC_LCONTROL) || inputKeyboard.IsKeyDown(KeyCode.KC_RCONTROL)))
+            if (inputKeyboard.IsKeyDown(KeyCode.KC_S) && (inputKeyboard.IsKeyDown(KeyCode.KC_LCONTROL) || inputKeyboard.IsKeyDown(KeyCode.KC_RCONTROL)))
             {
                 Cursor = Cursors.WaitCursor;
-                meshPainter.saveCurrentTexture();
+                saveCurrentTexture();
                 Cursor = Cursors.Default;
             }
 
             if (!mRoot.RenderOneFrame())
             {
                 mShutdownRequested = true;
-            }
-        }             
-        
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            string fullPath = imageList1.Images.Keys[texList.SelectedIndex];
-            pictureBox1.Image = System.Drawing.Image.FromFile( fullPath );
-            int trimPathIndex = fullPath.LastIndexOf("/");
-            string texture = fullPath;
-            if( trimPathIndex > 0 )
-            {
-                texture = fullPath.Substring(trimPathIndex + 1);
-            }
+            }        
+        }
 
-            if (ResourceGroupManager.Singleton.ResourceExists(ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, texture))
-            {
-                meshPainter.setActiveTexture(texture);
-            }
-            else
-            { 
-                LogManager.Singleton.LogMessage("Error: Draw functionality couldn't find texture: " + texture );
-            }
-        }       
+        private void saveCurrentTexture()
+        {
+            string path = texturePreviewList.Images.Keys[texList.SelectedIndex];
+
+            LogManager.Singleton.LogMessage("Saving..." );
+
+            meshPainter.saveCurrentTextureAs(path);
+        }
+        
 
     #region Panel1
 
         private void splitContainer1_Panel1_MouseEnter(object sender, EventArgs e)
         {
             mouseInPanel1 = true;
-            splitContainer1.Panel1.Focus();
+            //splitContainer1.Panel1.Focus();
         }
         private void splitContainer1_Panel1_MouseLeave(object sender, EventArgs e)
         {
@@ -308,8 +298,29 @@ namespace Squamster
 
     #endregion
     #region Meshes
+        
+        /// <summary>
+        /// Adds a mesh's name to the mesh listbox
+        /// </summary>
+        /// <param name="mesh">The name of the mesh to add to the list.</param>
+        private void addMeshToList( String mesh )
+        {
+            LogManager.Singleton.LogMessage("Adding mesh: " + mesh + " to list...");
+            meshListBox.Items.Add(mesh);
+            LogManager.Singleton.LogMessage("Mesh added to list!");
+        }
+        private void addMeshToList(StringVector meshes)
+        {
+            meshListBox.SuspendLayout();
+            foreach (String mesh in meshes)
+            {
+                addMeshToList(mesh);
+            }
+            meshListBox.ResumeLayout(false);
+            meshListBox.PerformLayout();
+        }
 
-        private void meshListBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void selectMesh(object sender, EventArgs e)
         {
             LogManager.Singleton.LogMessage("-= Event: Mesh Selection =-");
             //Stats
@@ -409,7 +420,7 @@ namespace Squamster
 
                 LogManager.Singleton.LogMessage("Adding Textures...");
                 //Texture information
-                imageList1.Images.Clear();
+                texturePreviewList.Images.Clear();
                 texList.Items.Clear();
                 if (textureNames.Count > 0)
                 {
@@ -421,7 +432,7 @@ namespace Squamster
                             string path = fileInfoItr[j].archive.Name + "/" + fileInfoItr[j].filename;
                             statsLabel.Text += "\n" + path;
                             System.Drawing.Image texImage = System.Drawing.Image.FromFile(path);
-                            imageList1.Images.Add(path, texImage);
+                            texturePreviewList.Images.Add(path, texImage);
                             texList.Items.Add(textureName);
                             if (texList.Items.Count == 1)
                             {
@@ -441,7 +452,7 @@ namespace Squamster
             }
             LogManager.Singleton.LogMessage("-= Mesh Selection Complete =-");
         }
-        private void Btd_LoadAll_Click(object sender, EventArgs e)
+        private void Btn_LoadAll_Click(object sender, EventArgs e)
         {
             LogManager.Singleton.LogMessage("-= Loading all meshes =-");
             Cursor = Cursors.WaitCursor;
@@ -453,15 +464,12 @@ namespace Squamster
             LogManager.Singleton.LogMessage("Getting all meshes...");
             StringVector meshesAdded = meshLoader.createAllMeshesFromResourceSystem();
             LogManager.Singleton.LogMessage("All meshes obtained.");
-            foreach (String mesh in meshesAdded)
-            {
-                addMeshToList(mesh);
-            }
+            addMeshToList(meshesAdded);
             LogManager.Singleton.LogMessage("Added all meshes to list.");
             if (autoSelectNewMesh)
             {
                 LogManager.Singleton.LogMessage(" Mesh list was previously empty, setting selected mesh...");
-                meshListBox.SetSelected(0, true);
+                meshListBox.SelectedIndex = 0;
             }
             Cursor = Cursors.Default;
             LogManager.Singleton.LogMessage("-= Loading all meshes: Finished =-");
@@ -496,7 +504,7 @@ namespace Squamster
                 }
                 if (autoSelectNewMesh)
                 {
-                    meshListBox.SetSelected(0, true);
+                    meshListBox.SelectedIndex = 0;
                 }
                 Cursor = Cursors.Default;
             }
@@ -505,7 +513,7 @@ namespace Squamster
     #endregion        
     #region Animations
         
-        private void animBox_SelectionChangeCommitted(object sender, EventArgs e)
+        private void selectAnim(object sender, EventArgs e)
         {
             if (animBox.SelectedItem != null)
             {
@@ -557,7 +565,7 @@ namespace Squamster
             // you can use e.state.Y.rel for reltive position, and e.state.Y.abs for absolute
             if (mouseInPanel1)
             {
-                if (e.state.ButtonDown(MouseButtonID.MB_Right))
+                if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Right)
                 {
                     if (e.state.X.rel != 0)
                     {
@@ -569,18 +577,19 @@ namespace Squamster
                         ExCamera.cameraPitch(new Degree(e.state.Y.rel));
                     }
                 }
-                else if (e.state.ButtonDown(MouseButtonID.MB_Left))
+                else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Left)
                 {
-                    Point pos = PointToClient( System.Windows.Forms.Control.MousePosition );
-                    drawPreview( meshPainter.draw(pos.X, pos.Y, penColor));
+                    Point mousePos  = PointToClient(System.Windows.Forms.Control.MousePosition);
+                    Point pos = new Point( mousePos.X, mousePos.Y - menuStrip1.Height);
+                    drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
                 }
                 else if (e.state.Z.rel != 0)
                 {
                     ExCamera.cameraZoom(e.state.Z.rel * .1f);
                 }
-                else if (e.state.ButtonDown(MouseButtonID.MB_Middle))
+                else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Middle)
                 {
-                    ExCamera.pan(new Mogre.Vector3(e.state.X.rel * .5f, e.state.Y.rel * .5f, 0));
+                    ExCamera.pan(new Mogre.Vector3(e.state.X.rel, e.state.Y.rel, 0));
                 }
             }
             return true;
@@ -622,6 +631,8 @@ namespace Squamster
 
 #endregion
 
+#region Texture
+
         private void drawPreview(PointF drawPoint)
         { 
             int picBoxWidth = pictureBox1.Size.Width;
@@ -633,7 +644,7 @@ namespace Squamster
             if (drawPoint.X >= 0 && drawPoint.Y >= 0 && drawPoint.X <= 1 && drawPoint.Y <= 1)
             {
 
-                System.Drawing.Pen pen = new Pen(Color.FromArgb( (int)penColor.GetAsARGB()));
+                System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
                 int x = (int)((float)drawPoint.X * ((float)picBoxWidth - 1));
                 int y = (int)((float)drawPoint.Y * ((float)picBoxHeight - 1));
 
@@ -643,12 +654,135 @@ namespace Squamster
                 objGraphic.Restore(graph);
             }
         }
+        private void selectedTexture(object sender, EventArgs e)
+        {
+            string fullPath = texturePreviewList.Images.Keys[texList.SelectedIndex];
+            pictureBox1.Image = System.Drawing.Image.FromFile( fullPath );
+            int trimPathIndex = fullPath.LastIndexOf("/");
+            string texture = fullPath;
+            if( trimPathIndex > 0 )
+            {
+                texture = fullPath.Substring(trimPathIndex + 1);
+            }
 
-        private void panel1_MouseUp(object sender, MouseEventArgs e)
+            if (ResourceGroupManager.Singleton.ResourceExists(ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, texture))
+            {
+                LogManager.Singleton.LogMessage("Attempting to set texture:" + texture);
+                meshPainter.setActiveTexture(texture);
+                
+            }
+            else
+            { 
+                LogManager.Singleton.LogMessage("Error: Draw functionality couldn't find texture: " + texture );
+            }
+        }       
+        private void selectColor(object sender, MouseEventArgs e)
         {
             DialogResult colorResult = this.colorDialog1.ShowDialog();
-            panel1.BackColor = colorDialog1.Color;
-            penColor.SetAsARGB((uint)colorDialog1.Color.ToArgb());
+            colorSelector.BackColor = colorDialog1.Color;
+            Painter.penColor.SetAsARGB((uint)colorDialog1.Color.ToArgb());
         }
+        private void brushScaleControl_ValueChanged(object sender, EventArgs e)
+        {
+            meshPainter.BrushScale = (float)brushScaleControl.Value;
+        }
+        private void brushOpacityControl_ValueChanged(object sender, EventArgs e)
+        {
+            meshPainter.BrushOpacity = (float)brushOpacityControl.Value;
+        }
+#endregion
+
+        private void setViewMode(object sender, EventArgs e)
+        {
+            Menu_View_Paint.Checked = false;
+            Menu_View_View.Checked = true;
+            viewPanel.Visible = true;
+            paintPanel.Visible = false;
+            Btn_View.BackColor = Color.FromArgb(64, 0, 0);
+            Btn_Paint.BackColor = Color.Black;
+        }
+
+        private void setPaintMode(object sender, EventArgs e)
+        {
+            int currentBrushIndex = meshPainter.currentBrush;
+            Menu_View_View.Checked = false;
+            Menu_View_Paint.Checked = true;
+            paintPanel.Visible = true;
+            viewPanel.Visible = false;
+            Btn_View.BackColor = Color.Black;
+            Btn_Paint.BackColor = Color.FromArgb(64, 0, 0);
+            brushList.Items[currentBrushIndex].Selected = true;
+        }
+
+        private void openToolStripButton_Click(object sender, EventArgs e)
+        {
+            Btn_Load_Click(sender, e);
+        }
+
+        private void saveToolStripButton_Click(object sender, EventArgs e)
+        {
+            saveCurrentTexture();
+        }
+
+        private void splitContainer1_Panel1_MouseEnter_1(object sender, EventArgs e)
+        {
+            splitContainer1.Panel1.Focus();
+            mouseInPanel1 = true;
+        }
+
+        private void splitContainer1_Panel1_MouseLeave_1(object sender, EventArgs e)
+        {
+            mouseInPanel1 = false;
+        }
+
+        private void paintToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            setPaintMode(sender, e);
+        }
+
+        private void viewToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            setViewMode(sender, e);
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Btn_Load_Click(sender, e);
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            saveCurrentTexture();
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void brushList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            for( int i = 0; i < brushList.Items.Count; i++ )
+            {
+                if( brushList.Items[i].Selected )
+                {
+                    meshPainter.currentBrush = i;
+                }
+            }
+        }
+
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveDialog = new SaveFileDialog();
+            saveDialog.Title = "Save Current Texture";
+            saveDialog.DefaultExt = ".png";
+            DialogResult dr = saveDialog.ShowDialog();
+            if (dr == DialogResult.OK)
+            {
+                meshPainter.saveCurrentTextureAs(saveDialog.FileName);
+            }
+        }
+
+
     }
 }

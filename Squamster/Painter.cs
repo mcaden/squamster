@@ -35,10 +35,16 @@ namespace Squamster
         public Rectangle2D mMiniScreen;
         public SceneNode mMiniScreenNode;
 #endif        
-        public  List<TexturePtr> customTextures = new List<TexturePtr>();
-        public  int activeTexture = -1;
+        public List<TexturePtr> customTextures = new List<TexturePtr>();
+        public List<System.Drawing.Bitmap> brushes = new List<System.Drawing.Bitmap>();
+        int mCurrentBrush = -1;
+        float mBrushScale = 1;
+        float mBrushOpacity = 1;
+        public int activeTexture = -1;
         public TexturePtr uvEncodedTexture;
         StringVector materials = new StringVector();
+
+        public static ColourValue penColor = new ColourValue(1, 0, 0, 1);
 
         public Painter()
         {
@@ -88,7 +94,64 @@ namespace Squamster
             uvEncodingMaterial.GetTechnique(1).GetPass(0).SetFragmentProgram("uvEncode_ps_hlsl");
             renderTexture.PreRenderTargetUpdate += new RenderTargetListener.PreRenderTargetUpdateHandler(preRenderTargetUpdateX);
             renderTexture.PostRenderTargetUpdate += new RenderTargetListener.PostRenderTargetUpdateHandler(postRenderTargetUpdateX);
+        }
 
+        public int currentBrush
+        {
+            get
+            {
+                return mCurrentBrush;
+            }
+            set
+            {
+                mCurrentBrush = value;
+                LogManager.Singleton.LogMessage("Current brush set as: " + mCurrentBrush.ToString());
+            }
+        }
+
+        public void addBrush(System.Drawing.Bitmap brushImage)
+        {
+            brushes.Add(brushImage);
+        }
+
+        public float BrushScale
+        {
+            get
+            {
+                return mBrushScale;
+            }
+
+            set
+            {
+                mBrushScale = value;
+            }
+        }
+
+        public Point getBrushSize()
+        {
+            Point scaledBrushSize = new Point( 0, 0 );
+            if (currentBrush >= 0)
+            {
+                LogManager.Singleton.LogMessage("Getting brush size...");
+                scaledBrushSize.X = (int)(brushes[mCurrentBrush].Width * mBrushScale);
+                scaledBrushSize.Y = (int)(brushes[mCurrentBrush].Height * mBrushScale);
+                LogManager.Singleton.LogMessage("Brush size retrieved as: " + scaledBrushSize.ToString());
+            }
+
+            return scaledBrushSize;
+        }
+
+        public float BrushOpacity
+        {
+            get
+            {
+                return mBrushOpacity;
+            }
+
+            set
+            {
+                mBrushOpacity = value;
+            }
         }
 
         public void dispose()
@@ -115,8 +178,49 @@ namespace Squamster
 
                 if (mouseY < 0)
                     mouseY = 0;
-                else if (mouseY > OgreForm.mWindow.Width)
-                    mouseY = (int)OgreForm.mWindow.Width;
+                else if (mouseY > OgreForm.mWindow.Height)
+                    mouseY = (int)OgreForm.mWindow.Height;
+
+                Bitmap scaledBrush;
+
+                if (mBrushScale != 1)
+                {
+                    scaledBrush = new Bitmap(brushes[currentBrush], new Size((int)(brushes[currentBrush].Width * mBrushScale), (int)(brushes[currentBrush].Height * mBrushScale)));
+                }
+                else
+                {
+                    scaledBrush = brushes[currentBrush];
+                }
+                
+
+                LogManager.Singleton.LogMessage("Scaled Brush Size: " + scaledBrush.Width.ToString() + "," + scaledBrush.Height.ToString());
+
+                Point tl = new Point(mouseX - (scaledBrush.Width / 2), mouseY - (scaledBrush.Height / 2));
+                if (tl.X < 0)
+                    tl.X = 0;
+                else if (tl.X >= uvEncodedTexture.Width)
+                    tl.X = (int)uvEncodedTexture.Width - 1;
+
+                if (tl.Y < 0)
+                    tl.Y = 0;
+                else if (tl.Y >= uvEncodedTexture.Height)
+                    tl.Y = (int)uvEncodedTexture.Height - 1;
+
+                LogManager.Singleton.LogMessage("Top-left = " + tl.ToString() );
+
+                Point br = new Point(tl.X + scaledBrush.Width, tl.Y + scaledBrush.Height);
+                if (br.X >= uvEncodedTexture.Width)
+                    br.X = (int)uvEncodedTexture.Width - 1;
+                if (br.Y >= uvEncodedTexture.Height)
+                    br.Y = (int)uvEncodedTexture.Height - 1;
+
+                LogManager.Singleton.LogMessage("Bottom-Right = " + br.ToString());
+
+                int width = br.X - tl.X;
+                int height = br.Y - tl.Y;
+
+                List<Point> points = new List<Point>();
+                List<Point> brushPoints = new List<Point>();
 
                 unsafe
                 {
@@ -125,29 +229,82 @@ namespace Squamster
                     ColourValue uvColorValue = new ColourValue();
                     PixelBox pbox = buffer.CurrentLock;
 
-                    Box writebox = new Box((uint)mouseX, (uint)mouseY, (uint)mouseX + 1, (uint)mouseY + 1);
-                    PixelUtil.UnpackColour(&uvColorValue, PixelFormat.PF_FLOAT16_RGBA, pbox.GetSubVolume(writebox).data.ToPointer());
+                    HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                    meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                    PixelBox texEdit = meshTexBuffer.CurrentLock;
 
-                    //LogManager.Singleton.LogMessage("UV color: " + uvColorValue.r.ToString() + "," + uvColorValue.g.ToString() + "," + uvColorValue.b.ToString() + "," + uvColorValue.a.ToString());
+                    Box writebox = new Box((uint)tl.X, (uint)tl.Y, (uint)br.X, (uint)br.Y);
+                    //LogManager.Singleton.LogMessage("Brush coords: " + writebox.left.ToString() + "," + writebox.top.ToString());
 
-                    if (!(uvColorValue.b > 0))
+                    for (uint i = (uint)tl.X ; i < br.X; i++) 
+                    { 
+                        for (uint j = (uint)tl.Y ; j < br.Y ; j++) 
+                        { 
+                            writebox = new Box(i, j, i, j);
+                            //LogManager.Singleton.LogMessage("Reading coords: " + writebox.left.ToString() + "," + writebox.top.ToString());
+                            PixelUtil.UnpackColour(&uvColorValue, PixelFormat.PF_FLOAT16_RGBA, pbox.GetSubVolume(writebox).data.ToPointer());
+
+                            //LogManager.Singleton.LogMessage("UV color: " + uvColorValue.r.ToString() + "," + uvColorValue.g.ToString() + "," + uvColorValue.b.ToString() + "," + uvColorValue.a.ToString());
+
+                            if (!(uvColorValue.b > 0))
+                            {
+                                float red = uvColorValue.r;
+                                float green = uvColorValue.g;
+
+                                red = red % 1;
+                                if (red < 0)
+                                {
+                                    red = red + 1;
+                                }
+                                green = green % 1;
+                                if (green < 0)
+                                {
+                                    green = green + 1;
+                                }
+
+                                previewPoint.X = red;
+                                previewPoint.Y = green;
+                                
+                                uvX = (red * (customTextures[activeTexture].Width - 1));
+                                uvY = (green * (customTextures[activeTexture].Height - 1));
+
+                                if( !points.Contains( new Point( (int)uvX, (int)uvY ) ))
+                                {
+                                    points.Add( new Point( (int)uvX, (int)uvY));
+                                    brushPoints.Add(new Point( (int)(i - tl.X), (int)(j - tl.Y)));
+                                }
+                            }
+                        } 
+                    }
+
+                    for( int i = 0; i < points.Count; i++ )
                     {
-                        previewPoint.X = uvColorValue.r;
-                        previewPoint.Y = uvColorValue.g;
-                        uvX = (uvColorValue.r * (customTextures[activeTexture].Width - 1));
-                        uvY = (uvColorValue.g * (customTextures[activeTexture].Height - 1));
+                        writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
+
+                        ColourValue baseColor = new ColourValue();
+
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
 
                         //LogManager.Singleton.LogMessage(" UV Coords: " + uvX.ToString() + ", " + uvY.ToString() + " - On size: " + customTextures[activeTexture].Width.ToString() + ", " + customTextures[activeTexture].Height.ToString());
 
-                        HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
-                        meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
-                        PixelBox texEdit = meshTexBuffer.CurrentLock;
+                        ColourValue drawColor = new ColourValue();
+                        drawColor.SetAsARGB((uint)scaledBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
 
-                        writebox = new Box((uint)uvX, (uint)uvY, (uint)uvX + 1, (uint)uvY + 1);
-                        PixelUtil.PackColour( penColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                        float alpha = (1 - drawColor.r) * mBrushOpacity;
 
-                        meshTexBuffer.Unlock();                    
+                        //LogManager.Singleton.LogMessage("Pen: " + penColor.r + "\nBase: " + baseColor.r + "\n Draw: " + drawColor.r);
+
+                        drawColor.r = alpha * penColor.r + baseColor.r * (1 - alpha);
+                        drawColor.g = alpha * penColor.g + baseColor.g * (1 - alpha);
+                        drawColor.b = alpha * penColor.b + baseColor.b * (1 - alpha);
+
+
+                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
                     }
+
+                    
+                    
+                    meshTexBuffer.Unlock();    
                     buffer.Unlock();
                 }
             } 
@@ -157,8 +314,9 @@ namespace Squamster
         public void setActiveTexture(string texture)
         {
             string drawTexName = "drawTex_" + texture;
-            if (ResourceGroupManager.Singleton.ResourceExists(ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, drawTexName))
+            if (TextureManager.Singleton.ResourceExists(drawTexName))
             {
+                LogManager.Singleton.LogMessage("Fetching draw-texture since it already exists...");
                 bool textureSelected = false;
                 for (int i = 0; i < customTextures.Count && !textureSelected; i++)
                 {
@@ -172,8 +330,9 @@ namespace Squamster
             }
             else
             {
+                LogManager.Singleton.LogMessage("Creating a new draw-texture since it doesn't already exist...");
                 TexturePtr originalTexture = TextureManager.Singleton.GetByName(texture);
-                customTextures.Add(TextureManager.Singleton.CreateManual("drawTex_" + texture,
+                customTextures.Add(TextureManager.Singleton.CreateManual(drawTexName,
                     ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, TextureType.TEX_TYPE_2D,
                     originalTexture.Width, originalTexture.Height, 0, originalTexture.Format, (int)TextureUsage.TU_DYNAMIC));
                 activeTexture = customTextures.Count - 1;
@@ -203,7 +362,7 @@ namespace Squamster
 
         }
 
-        public void saveCurrentTexture()
+        public void saveCurrentTextureAs( string path )
         {
             LogManager.Singleton.LogMessage("Saving File...");
             unsafe
@@ -217,7 +376,7 @@ namespace Squamster
                 Mogre.Image img = new Mogre.Image();
                 img = img.LoadDynamicImage(readrefdata, customTextures[activeTexture].Width,
                 customTextures[activeTexture].Height, customTextures[activeTexture].Format);
-                img.Save("test.png");
+                img.Save(path);
 
                 readbuffer.Unlock();
             }
