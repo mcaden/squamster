@@ -80,9 +80,9 @@ namespace Squamster
             Show();
             while (mRoot != null && !mShutdownRequested)
             {
+                System.Threading.Thread.Sleep(0);
                 this.update();
                 Application.DoEvents();
-                System.Threading.Thread.Sleep(0);
             }
         }
 
@@ -271,7 +271,7 @@ namespace Squamster
             if (!mRoot.RenderOneFrame())
             {
                 mShutdownRequested = true;
-            }        
+            }
         }
 
         private void saveCurrentTexture()
@@ -311,13 +311,10 @@ namespace Squamster
         }
         private void addMeshToList(StringVector meshes)
         {
-            meshListBox.SuspendLayout();
-            foreach (String mesh in meshes)
+            for( int i = 0; i < meshes.Count; i++ )
             {
-                addMeshToList(mesh);
+                addMeshToList(meshes[i]);
             }
-            meshListBox.ResumeLayout(false);
-            meshListBox.PerformLayout();
         }
 
         private void selectMesh(object sender, EventArgs e)
@@ -464,7 +461,14 @@ namespace Squamster
             LogManager.Singleton.LogMessage("Getting all meshes...");
             StringVector meshesAdded = meshLoader.createAllMeshesFromResourceSystem();
             LogManager.Singleton.LogMessage("All meshes obtained.");
-            addMeshToList(meshesAdded);
+            try
+            {
+                addMeshToList(meshesAdded);
+            }
+            catch
+            {
+                MessageBox.Show("C# crashed");
+            }
             LogManager.Singleton.LogMessage("Added all meshes to list.");
             if (autoSelectNewMesh)
             {
