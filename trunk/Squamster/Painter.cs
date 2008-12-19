@@ -242,7 +242,7 @@ namespace Squamster
                         { 
                             writebox = new Box(i, j, i, j);
                             //LogManager.Singleton.LogMessage("Reading coords: " + writebox.left.ToString() + "," + writebox.top.ToString());
-                            PixelUtil.UnpackColour(&uvColorValue, PixelFormat.PF_FLOAT16_RGBA, pbox.GetSubVolume(writebox).data.ToPointer());
+                            PixelUtil.UnpackColour(&uvColorValue, uvEncodedTexture.Format, pbox.GetSubVolume(writebox).data.ToPointer());
 
                             //LogManager.Singleton.LogMessage("UV color: " + uvColorValue.r.ToString() + "," + uvColorValue.g.ToString() + "," + uvColorValue.b.ToString() + "," + uvColorValue.a.ToString());
 
@@ -313,14 +313,13 @@ namespace Squamster
 
         public void setActiveTexture(string texture)
         {
-            string drawTexName = "drawTex_" + texture;
-            if (TextureManager.Singleton.ResourceExists(drawTexName))
+            if ( texture.StartsWith("drawTex_"))
             {
-                LogManager.Singleton.LogMessage("Fetching draw-texture since it already exists...");
+                LogManager.Singleton.LogMessage("Fetching draw-texture '" + texture + "' since it already exists...");
                 bool textureSelected = false;
                 for (int i = 0; i < customTextures.Count && !textureSelected; i++)
                 {
-                    if (customTextures[i].Name == drawTexName)
+                    if (customTextures[i].Name == texture)
                     {
                         activeTexture = i;
                         textureSelected = true;
@@ -329,8 +328,9 @@ namespace Squamster
                 LogManager.Singleton.LogMessage("Now drawing on texture: " + customTextures[activeTexture].Name);
             }
             else
-            {
-                LogManager.Singleton.LogMessage("Creating a new draw-texture since it doesn't already exist...");
+            { 
+                string drawTexName = "drawTex_" + texture;
+                LogManager.Singleton.LogMessage("Creating a new draw-texture for '" + texture + "' since it doesn't already exist...");
                 TexturePtr originalTexture = TextureManager.Singleton.GetByName(texture);
                 customTextures.Add(TextureManager.Singleton.CreateManual(drawTexName,
                     ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, TextureType.TEX_TYPE_2D,
@@ -360,6 +360,32 @@ namespace Squamster
                 LogManager.Singleton.LogMessage("Now drawing on texture: " + customTextures[activeTexture].Name);
             }
 
+        }
+
+        public string createDrawTexture(string name)
+        {
+            string drawTexName = "drawTex_" + name;
+            if (!name.StartsWith("drawTex_") && !TextureManager.Singleton.ResourceExists(drawTexName))
+            {
+                LogManager.Singleton.LogMessage("Creating a new draw-texture for: " + name);
+                TexturePtr originalTexture = TextureManager.Singleton.GetByName(name);
+                customTextures.Add(TextureManager.Singleton.CreateManual(drawTexName,
+                    ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, TextureType.TEX_TYPE_2D,
+                    originalTexture.Width, originalTexture.Height, 0, originalTexture.Format, (int)TextureUsage.TU_DYNAMIC));
+                originalTexture.CopyToTexture(customTextures[customTextures.Count - 1]);
+
+                LogManager.Singleton.LogMessage("Created texture: " + customTextures[customTextures.Count - 1].Name);
+            }
+            else
+            {
+                if (name.StartsWith("drawTex_"))
+                {
+                    drawTexName = name;
+                }
+                LogManager.Singleton.LogMessage("Skipping draw-texture creation - it already exists.");
+            }
+
+            return drawTexName;
         }
 
         public void saveCurrentTextureAs( string path )
@@ -411,6 +437,11 @@ namespace Squamster
 #if DEBUG
             mMiniScreenNode.SetVisible(true);
 #endif
+        }
+
+        public string getCurrentTextureName()
+        {
+            return customTextures[activeTexture].Name;
         }
     }
 }

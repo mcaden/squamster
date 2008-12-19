@@ -41,6 +41,7 @@ namespace Squamster
         public static RenderWindow mWindow;
         public static ExtendedCamera ExCamera;
         bool mShutdownRequested = false;
+        bool busy = false;
 
         Painter meshPainter;
         MeshLoader meshLoader;
@@ -274,14 +275,7 @@ namespace Squamster
             }
         }
 
-        private void saveCurrentTexture()
-        {
-            string path = texturePreviewList.Images.Keys[texList.SelectedIndex];
-
-            LogManager.Singleton.LogMessage("Saving..." );
-
-            meshPainter.saveCurrentTextureAs(path);
-        }
+        
         
 
     #region Panel1
@@ -316,7 +310,6 @@ namespace Squamster
                 addMeshToList(meshes[i]);
             }
         }
-
         private void selectMesh(object sender, EventArgs e)
         {
             LogManager.Singleton.LogMessage("-= Event: Mesh Selection =-");
@@ -373,6 +366,7 @@ namespace Squamster
                                 Pass.TextureUnitStateIterator texItr = passItr.Current.GetTextureUnitStateIterator();
                                 while (texItr.MoveNext())
                                 {
+                                    texItr.Current.SetTextureName(meshPainter.createDrawTexture(texItr.Current.TextureName));
                                     textureNames.Add(texItr.Current.TextureName);
                                 }
                             }
@@ -416,25 +410,34 @@ namespace Squamster
                         + materialNameOutput + textureNameOutput;
 
                 LogManager.Singleton.LogMessage("Adding Textures...");
-                //Texture information
                 texturePreviewList.Images.Clear();
                 texList.Items.Clear();
                 if (textureNames.Count > 0)
                 {
+                    
                     foreach (String textureName in textureNames)
                     {
-                        FileInfoList fileInfoItr = ResourceGroupManager.Singleton.FindResourceFileInfo(ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, textureName);
-                        for (int j = 0; j < fileInfoItr.Count; j++)
+                        LogManager.Singleton.LogMessage("Fetching the preview texture '" + textureName + "' from Ogre...");
+                        unsafe
                         {
-                            string path = fileInfoItr[j].archive.Name + "/" + fileInfoItr[j].filename;
-                            statsLabel.Text += "\n" + path;
-                            System.Drawing.Image texImage = System.Drawing.Image.FromFile(path);
-                            texturePreviewList.Images.Add(path, texImage);
-                            texList.Items.Add(textureName);
+                            TexturePtr currentTex = TextureManager.Singleton.GetByName(textureName);
+                            currentTex.GetBuffer().Lock( HardwareBuffer.LockOptions.HBL_READ_ONLY );
+                            PixelBox mPboxdst = currentTex.GetBuffer().CurrentLock;
+                            Mogre.Image mImage = new Mogre.Image();
+                            LogManager.Singleton.LogMessage("Loading texture data into image");
+                            mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), currentTex.Width, currentTex.Height, currentTex.Format);
+                            currentTex.GetBuffer().Unlock();
+                            LogManager.Singleton.LogMessage("Creating preview image");
+                            System.Drawing.Image texImage = MogreImageToBitmap(mImage);
+                            LogManager.Singleton.LogMessage("Registering image");
+                            texturePreviewList.Images.Add(currentTex.Name, texImage);
+                            LogManager.Singleton.LogMessage("Adding image to list...");
+                            texList.Items.Add(currentTex.Name.Substring( currentTex.Name.IndexOf("_") + 1));
                             if (texList.Items.Count == 1)
                             {
                                 texList.SelectedIndex = 0;
                             }
+                            LogManager.Singleton.LogMessage("Texture added!");
                         }
                     }
                     if (texList.Items.Count == 0)//Seems textures within zip files won't load
@@ -461,14 +464,7 @@ namespace Squamster
             LogManager.Singleton.LogMessage("Getting all meshes...");
             StringVector meshesAdded = meshLoader.createAllMeshesFromResourceSystem();
             LogManager.Singleton.LogMessage("All meshes obtained.");
-            try
-            {
-                addMeshToList(meshesAdded);
-            }
-            catch
-            {
-                MessageBox.Show("C# crashed");
-            }
+            addMeshToList(meshesAdded);
             LogManager.Singleton.LogMessage("Added all meshes to list.");
             if (autoSelectNewMesh)
             {
@@ -512,7 +508,53 @@ namespace Squamster
                 }
                 Cursor = Cursors.Default;
             }
-        }        
+        }
+        private void updateTexturePreview()
+        {
+            if (texList.Items.Count > 0)
+            {
+                LogManager.Singleton.LogMessage("-= Updating Preview Image =-");
+                unsafe
+                {
+                    TexturePtr currentTex = TextureManager.Singleton.GetByName( meshPainter.getCurrentTextureName() );
+                    currentTex.GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
+                    PixelBox mPboxdst = currentTex.GetBuffer().CurrentLock;
+                    Mogre.Image mImage = new Mogre.Image();
+                    LogManager.Singleton.LogMessage("Loading texture data into Mogre image...");
+                    mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), currentTex.Width, currentTex.Height, currentTex.Format);
+                    currentTex.GetBuffer().Unlock();
+                    LogManager.Singleton.LogMessage("Creating preview image...");
+                    System.Drawing.Image texImage = MogreImageToBitmap(mImage);
+                    LogManager.Singleton.LogMessage("Replacing preview...");
+                    pictureBox1.Image = texImage;
+                }
+                LogManager.Singleton.LogMessage("-= Preview Image Updated =-");
+            }
+        }
+        private Bitmap MogreImageToBitmap(Mogre.Image img)
+        {
+            unsafe
+            {
+                Bitmap bm = new Bitmap((int)img.Width, (int)img.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, (int)img.Width, (int)img.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bm.PixelFormat);
+                int PixelSize = 4;
+
+                for (int y = 0; y < bmd.Height; y++)
+                {
+                    byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
+                    for (int x = 0; x < bmd.Width; x++)
+                    {
+                        Mogre.ColourValue color = img.GetColourAt(x, y, 0);
+                        row[x * PixelSize] = (byte)(color.b * 255);
+                        row[x * PixelSize + 1] = (byte)(color.g * 255);
+                        row[x * PixelSize + 2] = (byte)(color.r * 255);
+                        row[x * PixelSize + 3] = (byte)(color.a * 255);
+                    }
+                }
+                bm.UnlockBits(bmd);
+                return bm;
+            }
+        }
 
     #endregion        
     #region Animations
@@ -583,6 +625,7 @@ namespace Squamster
                 }
                 else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Left)
                 {
+                    busy = true;
                     Point mousePos  = PointToClient(System.Windows.Forms.Control.MousePosition);
                     Point pos = new Point( mousePos.X, mousePos.Y - menuStrip1.Height);
                     drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
@@ -594,6 +637,14 @@ namespace Squamster
                 else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Middle)
                 {
                     ExCamera.pan(new Mogre.Vector3(e.state.X.rel, e.state.Y.rel, 0));
+                }
+                else
+                {
+                    if (busy)
+                    {
+                        busy = false;
+                        updateTexturePreview();
+                    }
                 }
             }
             return true;
@@ -636,7 +687,15 @@ namespace Squamster
 #endregion
 
 #region Texture
+        
+        private void saveCurrentTexture()
+        {
+            string path = texturePreviewList.Images.Keys[texList.SelectedIndex];
 
+            LogManager.Singleton.LogMessage("Saving..." );
+
+            meshPainter.saveCurrentTextureAs(path);
+        }
         private void drawPreview(PointF drawPoint)
         { 
             int picBoxWidth = pictureBox1.Size.Width;
@@ -658,26 +717,21 @@ namespace Squamster
                 objGraphic.Restore(graph);
             }
         }
-        private void selectedTexture(object sender, EventArgs e)
+        private void selectTexture(object sender, EventArgs e)
         {
             string fullPath = texturePreviewList.Images.Keys[texList.SelectedIndex];
-            pictureBox1.Image = System.Drawing.Image.FromFile( fullPath );
-            int trimPathIndex = fullPath.LastIndexOf("/");
+            pictureBox1.Image = texturePreviewList.Images[texList.SelectedIndex];
             string texture = fullPath;
-            if( trimPathIndex > 0 )
-            {
-                texture = fullPath.Substring(trimPathIndex + 1);
-            }
 
-            if (ResourceGroupManager.Singleton.ResourceExists(ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, texture))
+            if (TextureManager.Singleton.ResourceExists( texturePreviewList.Images.Keys[texList.SelectedIndex]))
             {
-                LogManager.Singleton.LogMessage("Attempting to set texture:" + texture);
-                meshPainter.setActiveTexture(texture);
+                LogManager.Singleton.LogMessage("Attempting to set texture:" + texturePreviewList.Images.Keys[texList.SelectedIndex]);
+                meshPainter.setActiveTexture(texturePreviewList.Images.Keys[texList.SelectedIndex]);
                 
             }
             else
-            { 
-                LogManager.Singleton.LogMessage("Error: Draw functionality couldn't find texture: " + texture );
+            {
+                LogManager.Singleton.LogMessage("Error: Draw functionality couldn't find texture: " + texturePreviewList.Images.Keys[texList.SelectedIndex]);
             }
         }       
         private void selectColor(object sender, MouseEventArgs e)
@@ -694,7 +748,19 @@ namespace Squamster
         {
             meshPainter.BrushOpacity = (float)brushOpacityControl.Value;
         }
+        private void brushList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            for( int i = 0; i < brushList.Items.Count; i++ )
+            {
+                if( brushList.Items[i].Selected )
+                {
+                    meshPainter.currentBrush = i;
+                }
+            }
+        }
 #endregion
+
+#region UI
 
         private void setViewMode(object sender, EventArgs e)
         {
@@ -716,16 +782,6 @@ namespace Squamster
             Btn_View.BackColor = Color.Black;
             Btn_Paint.BackColor = Color.FromArgb(64, 0, 0);
             brushList.Items[currentBrushIndex].Selected = true;
-        }
-
-        private void openToolStripButton_Click(object sender, EventArgs e)
-        {
-            Btn_Load_Click(sender, e);
-        }
-
-        private void saveToolStripButton_Click(object sender, EventArgs e)
-        {
-            saveCurrentTexture();
         }
 
         private void splitContainer1_Panel1_MouseEnter_1(object sender, EventArgs e)
@@ -764,17 +820,6 @@ namespace Squamster
             this.Close();
         }
 
-        private void brushList_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            for( int i = 0; i < brushList.Items.Count; i++ )
-            {
-                if( brushList.Items[i].Selected )
-                {
-                    meshPainter.currentBrush = i;
-                }
-            }
-        }
-
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveFileDialog saveDialog = new SaveFileDialog();
@@ -786,6 +831,10 @@ namespace Squamster
                 meshPainter.saveCurrentTextureAs(saveDialog.FileName);
             }
         }
+#endregion
+
+
+        
 
 
     }
