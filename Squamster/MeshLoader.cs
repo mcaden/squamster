@@ -102,11 +102,20 @@ namespace Squamster
 
                 if( !OgreForm.mSceneMgr.HasSceneNode( meshName ) )
                 {
-                    SceneNode meshNode = OgreForm.mSceneMgr.RootSceneNode.CreateChildSceneNode(meshName, new Mogre.Vector3(0, 0, 0));
-                    Entity ent = OgreForm.mSceneMgr.CreateEntity(meshName, meshName);
-                    meshNode.AttachObject(ent);
-                    meshNode.SetVisible(false);
-                    isMeshAdded = true;
+                    try
+                    {
+                        SceneNode meshNode = OgreForm.mSceneMgr.RootSceneNode.CreateChildSceneNode(meshName, new Mogre.Vector3(0, 0, 0));
+                        Entity ent = OgreForm.mSceneMgr.CreateEntity(meshName, meshName);
+                        meshNode.AttachObject(ent);
+                        meshNode.SetVisible(false);
+                        isMeshAdded = true;
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Mesh loading failed while attempting to load mesh: " + meshName);
+                        LogManager.Singleton.LogMessage("[EXCEPTION]MeshLoader failed while attempting to load mesh: " + meshName);
+                        isMeshAdded = false;
+                    }
                 }
                 else
                 {

@@ -48,6 +48,10 @@
             this.Btn_Paint = new System.Windows.Forms.Button();
             this.viewPanel = new System.Windows.Forms.Panel();
             this.paintPanel = new System.Windows.Forms.Panel();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.brushOpacityControl = new System.Windows.Forms.NumericUpDown();
+            this.brushScaleControl = new System.Windows.Forms.NumericUpDown();
             this.Lbl_Brushes = new System.Windows.Forms.Label();
             this.brushList = new System.Windows.Forms.ListView();
             this.brushPreviewList = new System.Windows.Forms.ImageList(this.components);
@@ -63,19 +67,15 @@
             this.Menu_View_Paint = new System.Windows.Forms.ToolStripMenuItem();
             this.Menu_View_View = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.brushScaleControl = new System.Windows.Forms.NumericUpDown();
-            this.brushOpacityControl = new System.Windows.Forms.NumericUpDown();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.viewPanel.SuspendLayout();
             this.paintPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.brushOpacityControl)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.brushScaleControl)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.brushScaleControl)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.brushOpacityControl)).BeginInit();
             this.SuspendLayout();
             // 
             // statsLabel
@@ -124,7 +124,7 @@
             this.texList.Name = "texList";
             this.texList.Size = new System.Drawing.Size(128, 21);
             this.texList.TabIndex = 11;
-            this.texList.SelectedIndexChanged += new System.EventHandler(this.selectedTexture);
+            this.texList.SelectedIndexChanged += new System.EventHandler(this.selectTexture);
             // 
             // pictureBox1
             // 
@@ -272,8 +272,8 @@
             // 
             // texturePreviewList
             // 
-            this.texturePreviewList.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
-            this.texturePreviewList.ImageSize = new System.Drawing.Size(16, 16);
+            this.texturePreviewList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+            this.texturePreviewList.ImageSize = new System.Drawing.Size(128, 128);
             this.texturePreviewList.TransparentColor = System.Drawing.Color.Transparent;
             // 
             // colorDialog1
@@ -355,6 +355,85 @@
             this.paintPanel.Size = new System.Drawing.Size(143, 600);
             this.paintPanel.TabIndex = 3;
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.BackColor = System.Drawing.Color.Transparent;
+            this.label2.ForeColor = System.Drawing.Color.White;
+            this.label2.Location = new System.Drawing.Point(4, 161);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(73, 13);
+            this.label2.TabIndex = 16;
+            this.label2.Text = "Brush Opacity";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.BackColor = System.Drawing.Color.Transparent;
+            this.label1.ForeColor = System.Drawing.Color.White;
+            this.label1.Location = new System.Drawing.Point(4, 135);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(57, 13);
+            this.label1.TabIndex = 15;
+            this.label1.Text = "Brush Size";
+            // 
+            // brushOpacityControl
+            // 
+            this.brushOpacityControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.brushOpacityControl.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.brushOpacityControl.DecimalPlaces = 2;
+            this.brushOpacityControl.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.brushOpacityControl.Location = new System.Drawing.Point(83, 159);
+            this.brushOpacityControl.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.brushOpacityControl.Name = "brushOpacityControl";
+            this.brushOpacityControl.Size = new System.Drawing.Size(51, 20);
+            this.brushOpacityControl.TabIndex = 14;
+            this.brushOpacityControl.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.brushOpacityControl.ValueChanged += new System.EventHandler(this.brushOpacityControl_ValueChanged);
+            // 
+            // brushScaleControl
+            // 
+            this.brushScaleControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.brushScaleControl.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.brushScaleControl.DecimalPlaces = 2;
+            this.brushScaleControl.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.brushScaleControl.Location = new System.Drawing.Point(82, 133);
+            this.brushScaleControl.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.brushScaleControl.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.brushScaleControl.Name = "brushScaleControl";
+            this.brushScaleControl.Size = new System.Drawing.Size(52, 20);
+            this.brushScaleControl.TabIndex = 13;
+            this.brushScaleControl.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.brushScaleControl.ValueChanged += new System.EventHandler(this.brushScaleControl_ValueChanged);
+            // 
             // Lbl_Brushes
             // 
             this.Lbl_Brushes.AutoSize = true;
@@ -428,39 +507,39 @@
             // 
             this.newToolStripMenuItem.Enabled = false;
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.newToolStripMenuItem.Text = "&New";
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.openToolStripMenuItem.Text = "&Open...";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.saveToolStripMenuItem.Text = "&Save";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // saveAsToolStripMenuItem
             // 
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.saveAsToolStripMenuItem.Text = "Save &As ...";
             this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(121, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(114, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -477,7 +556,7 @@
             // 
             this.Menu_View_Paint.CheckOnClick = true;
             this.Menu_View_Paint.Name = "Menu_View_Paint";
-            this.Menu_View_Paint.Size = new System.Drawing.Size(152, 22);
+            this.Menu_View_Paint.Size = new System.Drawing.Size(92, 22);
             this.Menu_View_Paint.Text = "&Paint";
             this.Menu_View_Paint.Click += new System.EventHandler(this.paintToolStripMenuItem_Click);
             // 
@@ -485,7 +564,7 @@
             // 
             this.Menu_View_View.CheckOnClick = true;
             this.Menu_View_View.Name = "Menu_View_View";
-            this.Menu_View_View.Size = new System.Drawing.Size(152, 22);
+            this.Menu_View_View.Size = new System.Drawing.Size(92, 22);
             this.Menu_View_View.Text = "&View";
             this.Menu_View_View.Click += new System.EventHandler(this.viewToolStripMenuItem1_Click);
             // 
@@ -517,85 +596,6 @@
             this.splitContainer1.SplitterWidth = 1;
             this.splitContainer1.TabIndex = 4;
             // 
-            // brushScaleControl
-            // 
-            this.brushScaleControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.brushScaleControl.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.brushScaleControl.DecimalPlaces = 2;
-            this.brushScaleControl.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.brushScaleControl.Location = new System.Drawing.Point(82, 133);
-            this.brushScaleControl.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.brushScaleControl.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.brushScaleControl.Name = "brushScaleControl";
-            this.brushScaleControl.Size = new System.Drawing.Size(52, 20);
-            this.brushScaleControl.TabIndex = 13;
-            this.brushScaleControl.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.brushScaleControl.ValueChanged += new System.EventHandler(this.brushScaleControl_ValueChanged);
-            // 
-            // brushOpacityControl
-            // 
-            this.brushOpacityControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.brushOpacityControl.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.brushOpacityControl.DecimalPlaces = 2;
-            this.brushOpacityControl.Increment = new decimal(new int[] {
-            5,
-            0,
-            0,
-            131072});
-            this.brushOpacityControl.Location = new System.Drawing.Point(83, 159);
-            this.brushOpacityControl.Maximum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.brushOpacityControl.Name = "brushOpacityControl";
-            this.brushOpacityControl.Size = new System.Drawing.Size(51, 20);
-            this.brushOpacityControl.TabIndex = 14;
-            this.brushOpacityControl.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.brushOpacityControl.ValueChanged += new System.EventHandler(this.brushOpacityControl_ValueChanged);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.BackColor = System.Drawing.Color.Transparent;
-            this.label1.ForeColor = System.Drawing.Color.White;
-            this.label1.Location = new System.Drawing.Point(4, 135);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(57, 13);
-            this.label1.TabIndex = 15;
-            this.label1.Text = "Brush Size";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.BackColor = System.Drawing.Color.Transparent;
-            this.label2.ForeColor = System.Drawing.Color.White;
-            this.label2.Location = new System.Drawing.Point(4, 161);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(73, 13);
-            this.label2.TabIndex = 16;
-            this.label2.Text = "Brush Opacity";
-            // 
             // OgreForm
             // 
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
@@ -615,14 +615,14 @@
             this.viewPanel.PerformLayout();
             this.paintPanel.ResumeLayout(false);
             this.paintPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.brushOpacityControl)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.brushScaleControl)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.brushScaleControl)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.brushOpacityControl)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
