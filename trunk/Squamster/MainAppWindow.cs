@@ -25,6 +25,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 using MOIS;
 using Mogre;
 
@@ -32,7 +33,7 @@ namespace Squamster
 {
     public partial class OgreForm : Form
     {
-        const string brushPath = "../../media/brushes/";
+        const string brushPath = "media/brushes/";
 
         public static Root mRoot = null;
         public static SceneManager mSceneMgr = null;
@@ -53,6 +54,10 @@ namespace Squamster
         protected MOIS.Keyboard inputKeyboard;
         protected MOIS.Mouse inputMouse;
         bool mouseInPanel1 = false;
+        bool actionPerformed = false;
+
+        List<byte[]> undoList = new List<byte[]>();
+        List<byte[]> redoList = new List<byte[]>();
 
         Mogre.Timer frameTimer = new Mogre.Timer();
 
@@ -126,6 +131,11 @@ namespace Squamster
 
             //misc = new NameValuePairList();
             //misc["externalWindowHandle"] = this.Handle.ToString();
+#if DEBUG
+            LogManager.Singleton.SetLogDetail(LoggingLevel.LL_BOREME);
+#else
+            LogManager.Singleton.SetLogDetail(LoggingLevel.LL_NORMAL);
+#endif
             LogManager.Singleton.LogMessage("*** Initializing MOIS ***");
             MOIS.ParamList pl = new MOIS.ParamList();
             //IntPtr windowHnd;
@@ -262,14 +272,46 @@ namespace Squamster
             inputMouse.Capture();
             ExCamera.update();
 
-            if (inputKeyboard.IsKeyDown(KeyCode.KC_S) && (inputKeyboard.IsKeyDown(KeyCode.KC_LCONTROL) || inputKeyboard.IsKeyDown(KeyCode.KC_RCONTROL)))
+            MouseButtons currentMouseButtons = System.Windows.Forms.Control.MouseButtons;
+
+            if (currentMouseButtons != MouseButtons.Left && currentMouseButtons != MouseButtons.Right && currentMouseButtons != MouseButtons.Middle)
             {
-                Cursor = Cursors.WaitCursor;
-                saveCurrentTexture();
-                Cursor = Cursors.Default;
+                if( inputKeyboard.IsKeyDown(KeyCode.KC_LCONTROL) || inputKeyboard.IsKeyDown(KeyCode.KC_RCONTROL))
+                {
+                    if (inputKeyboard.IsKeyDown(KeyCode.KC_S))
+                    {
+                        if (!actionPerformed)
+                        {
+                            actionPerformed = true;
+                            Cursor = Cursors.WaitCursor;
+                            saveCurrentTexture();
+                            Cursor = Cursors.Default;
+                        }
+                    }
+                    else if( inputKeyboard.IsKeyDown(KeyCode.KC_Z))
+                    {
+                        if (!actionPerformed)
+                        {
+                            undo();
+                            actionPerformed = true;
+                        }
+                    }
+                    else if (inputKeyboard.IsKeyDown(KeyCode.KC_Y))
+                    {
+                        if (!actionPerformed)
+                        {
+                            redo();
+                            actionPerformed = true;
+                        }
+                    }
+                    else
+                    {
+                        actionPerformed = false;
+                    }
+                }
             }
 
-            if (!mRoot.RenderOneFrame())
+            if ( !mRoot.RenderOneFrame() )
             {
                 mShutdownRequested = true;
             }
@@ -468,7 +510,7 @@ namespace Squamster
             LogManager.Singleton.LogMessage("Added all meshes to list.");
             if (autoSelectNewMesh)
             {
-                LogManager.Singleton.LogMessage(" Mesh list was previously empty, setting selected mesh...");
+                LogManager.Singleton.LogMessage("Mesh list was previously empty, setting selected mesh...");
                 meshListBox.SelectedIndex = 0;
             }
             Cursor = Cursors.Default;
@@ -513,24 +555,102 @@ namespace Squamster
         {
             if (texList.Items.Count > 0)
             {
-                LogManager.Singleton.LogMessage("-= Updating Preview Image =-");
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "-= Updating Preview Image =-");
                 unsafe
                 {
                     TexturePtr currentTex = TextureManager.Singleton.GetByName( meshPainter.getCurrentTextureName() );
                     currentTex.GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
                     PixelBox mPboxdst = currentTex.GetBuffer().CurrentLock;
                     Mogre.Image mImage = new Mogre.Image();
-                    LogManager.Singleton.LogMessage("Loading texture data into Mogre image...");
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Loading texture data into Mogre image...");
                     mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), currentTex.Width, currentTex.Height, currentTex.Format);
                     currentTex.GetBuffer().Unlock();
-                    LogManager.Singleton.LogMessage("Creating preview image...");
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Creating preview image...");
                     System.Drawing.Image texImage = MogreImageToBitmap(mImage);
-                    LogManager.Singleton.LogMessage("Replacing preview...");
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Replacing preview...");
                     pictureBox1.Image = texImage;
                 }
-                LogManager.Singleton.LogMessage("-= Preview Image Updated =-");
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "-= Preview Image Updated =-");
             }
         }
+        private void addToUndo()
+        {
+            if (texList.Items.Count > 0)
+            {
+                if (undoList.Count >= 20)
+                {
+                    undoList.RemoveAt(undoList.Count - 1);
+                }
+                unsafe
+                {
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Saving Undo Snapshot...");
+                    TexturePtr currentTex = TextureManager.Singleton.GetByName(meshPainter.getCurrentTextureName());
+                    HardwarePixelBuffer mBuffer = currentTex.GetBuffer();
+                    mBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                    byte[] frame = new byte[currentTex.Width * currentTex.Height * 4];
+                    PixelBox pBox = mBuffer.CurrentLock;
+                    Marshal.Copy(pBox.data, frame, 0, frame.Length);
+                    undoList.Insert(0, frame);
+                    mBuffer.Unlock();
+                }
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "-= Undo List Updated =-");
+                if (redoList.Count > 0)
+                {
+                    redoList.Clear();
+                }
+            }
+        }
+
+        private void undo()
+        {
+            if (texList.Items.Count > 0 && undoList.Count > 0)
+            {
+                LogManager.Singleton.LogMessage("-= Undoing Action =-");
+                unsafe
+                {
+                    LogManager.Singleton.LogMessage( LogMessageLevel.LML_TRIVIAL, "Saving Redo Snapshot...");
+                    TexturePtr currentTex = TextureManager.Singleton.GetByName(meshPainter.getCurrentTextureName());
+                    HardwarePixelBuffer mBuffer = currentTex.GetBuffer();
+                    mBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                    byte[] frame = new byte[currentTex.Width * currentTex.Height * 4];
+                    PixelBox pBox = mBuffer.CurrentLock;
+                    Marshal.Copy(pBox.data, frame, 0, frame.Length);
+                    redoList.Insert(0, frame);
+
+                    Marshal.Copy(undoList[0], 0, pBox.data, undoList[0].Length);
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Removing snapshot from list...");
+                    undoList.RemoveAt(0);
+                    mBuffer.Unlock();
+                }
+                LogManager.Singleton.LogMessage("-= Undo Finished - Undo history currently contains: " + undoList.Count.ToString() + " actions =-");
+            }
+        }
+
+        private void redo()
+        {
+            if (texList.Items.Count > 0 && redoList.Count > 0)
+            {
+                LogManager.Singleton.LogMessage("-= Redoing Action =-");
+                unsafe
+                {
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Saving Undo Snapshot...");
+                    TexturePtr currentTex = TextureManager.Singleton.GetByName(meshPainter.getCurrentTextureName());
+                    HardwarePixelBuffer mBuffer = currentTex.GetBuffer();
+                    mBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                    byte[] frame = new byte[currentTex.Width * currentTex.Height * 4];
+                    PixelBox pBox = mBuffer.CurrentLock;
+                    Marshal.Copy(pBox.data, frame, 0, frame.Length);
+                    undoList.Insert(0, frame);
+
+                    Marshal.Copy(redoList[0], 0, pBox.data, undoList[0].Length);
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Removing snapshot from list...");
+                    redoList.RemoveAt(0);
+                    mBuffer.Unlock();
+                }
+                LogManager.Singleton.LogMessage("-= Redo Finished - Undo history currently contains: " + undoList.Count.ToString() + " actions =-");
+            }
+        }
+
         private Bitmap MogreImageToBitmap(Mogre.Image img)
         {
             unsafe
@@ -625,7 +745,11 @@ namespace Squamster
                 }
                 else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Left)
                 {
-                    busy = true;
+                    if (!busy)
+                    {
+                        busy = true;
+                        addToUndo();
+                    }
                     Point mousePos  = PointToClient(System.Windows.Forms.Control.MousePosition);
                     Point pos = new Point( mousePos.X, mousePos.Y - menuStrip1.Height);
                     drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
