@@ -576,73 +576,7 @@ material Material__25
 		}
 	}
 }
-fragment_program uvEncodeX_ps_hlsl hlsl
-{
-	source uvEncode.hlsl
-	entry_point uvMapX_fp_hlsl
-	target ps_2_0
-	
-	default_params
-	{ 
-	}
-}
-fragment_program uvEncodeY_ps_hlsl hlsl
-{
-	source uvEncode.hlsl
-	entry_point uvMapY_fp_hlsl
-	target ps_2_0
-	
-	default_params
-	{ 
-	}
-}
 
-fragment_program uvEncode_ps_hlsl hlsl
-{
-	source uvEncode.hlsl
-	entry_point uvMap_fp_hlsl
-	target ps_2_0
-	
-	default_params
-	{ 
-	}
-}
-
-vertex_program uvEncode_vs_glsl glsl
-{
-	source uvEncodeV.glsl
-	
-	default_params
-	{ 
-	}
-}
-
-fragment_program uvEncodeX_ps_glsl glsl
-{
-	source uvEncodeXP.glsl
-	
-	default_params
-	{ 
-	}
-}
-
-fragment_program uvEncodeY_ps_glsl glsl
-{
-	source uvEncodeYP.glsl
-	
-	default_params
-	{ 
-	}
-}
-
-fragment_program uvEncode_ps_glsl glsl
-{
-	source uvEncodeP.glsl
-	
-	default_params
-	{ 
-	}
-}
 material 2 - Default
 {
 	technique

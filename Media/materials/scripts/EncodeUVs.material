@@ -1,0 +1,29 @@
+fragment_program uvEncode_ps_hlsl hlsl
+{
+	source uvEncode.hlsl
+	entry_point uvMap_fp_hlsl
+	target ps_2_0
+	
+	default_params
+	{ 
+	}
+}
+
+vertex_program uvEncode_vs_glsl glsl
+{
+	source uvEncodeV.glsl
+	
+	default_params
+	{ 
+	}
+}
+
+
+fragment_program uvEncode_ps_glsl glsl
+{
+	source uvEncodeP.glsl
+	
+	default_params
+	{ 
+	}
+}

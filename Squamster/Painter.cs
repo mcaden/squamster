@@ -132,10 +132,10 @@ namespace Squamster
             Point scaledBrushSize = new Point( 0, 0 );
             if (currentBrush >= 0)
             {
-                LogManager.Singleton.LogMessage("Getting brush size...");
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Getting brush size...");
                 scaledBrushSize.X = (int)(brushes[mCurrentBrush].Width * mBrushScale);
                 scaledBrushSize.Y = (int)(brushes[mCurrentBrush].Height * mBrushScale);
-                LogManager.Singleton.LogMessage("Brush size retrieved as: " + scaledBrushSize.ToString());
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Brush size retrieved as: " + scaledBrushSize.ToString());
             }
 
             return scaledBrushSize;
@@ -191,9 +191,9 @@ namespace Squamster
                 {
                     scaledBrush = brushes[currentBrush];
                 }
-                
 
-                LogManager.Singleton.LogMessage("Scaled Brush Size: " + scaledBrush.Width.ToString() + "," + scaledBrush.Height.ToString());
+
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Scaled Brush Size: " + scaledBrush.Width.ToString() + "," + scaledBrush.Height.ToString());
 
                 Point tl = new Point(mouseX - (scaledBrush.Width / 2), mouseY - (scaledBrush.Height / 2));
                 if (tl.X < 0)
@@ -206,7 +206,7 @@ namespace Squamster
                 else if (tl.Y >= uvEncodedTexture.Height)
                     tl.Y = (int)uvEncodedTexture.Height - 1;
 
-                LogManager.Singleton.LogMessage("Top-left = " + tl.ToString() );
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Top-left = " + tl.ToString());
 
                 Point br = new Point(tl.X + scaledBrush.Width, tl.Y + scaledBrush.Height);
                 if (br.X >= uvEncodedTexture.Width)
@@ -214,7 +214,7 @@ namespace Squamster
                 if (br.Y >= uvEncodedTexture.Height)
                     br.Y = (int)uvEncodedTexture.Height - 1;
 
-                LogManager.Singleton.LogMessage("Bottom-Right = " + br.ToString());
+                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Bottom-Right = " + br.ToString());
 
                 int width = br.X - tl.X;
                 int height = br.Y - tl.Y;
@@ -234,17 +234,13 @@ namespace Squamster
                     PixelBox texEdit = meshTexBuffer.CurrentLock;
 
                     Box writebox = new Box((uint)tl.X, (uint)tl.Y, (uint)br.X, (uint)br.Y);
-                    //LogManager.Singleton.LogMessage("Brush coords: " + writebox.left.ToString() + "," + writebox.top.ToString());
 
                     for (uint i = (uint)tl.X ; i < br.X; i++) 
                     { 
                         for (uint j = (uint)tl.Y ; j < br.Y ; j++) 
                         { 
                             writebox = new Box(i, j, i, j);
-                            //LogManager.Singleton.LogMessage("Reading coords: " + writebox.left.ToString() + "," + writebox.top.ToString());
                             PixelUtil.UnpackColour(&uvColorValue, uvEncodedTexture.Format, pbox.GetSubVolume(writebox).data.ToPointer());
-
-                            //LogManager.Singleton.LogMessage("UV color: " + uvColorValue.r.ToString() + "," + uvColorValue.g.ToString() + "," + uvColorValue.b.ToString() + "," + uvColorValue.a.ToString());
 
                             if (!(uvColorValue.b > 0))
                             {
@@ -285,14 +281,10 @@ namespace Squamster
 
                         PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
 
-                        //LogManager.Singleton.LogMessage(" UV Coords: " + uvX.ToString() + ", " + uvY.ToString() + " - On size: " + customTextures[activeTexture].Width.ToString() + ", " + customTextures[activeTexture].Height.ToString());
-
                         ColourValue drawColor = new ColourValue();
                         drawColor.SetAsARGB((uint)scaledBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
 
                         float alpha = (1 - drawColor.r) * mBrushOpacity;
-
-                        //LogManager.Singleton.LogMessage("Pen: " + penColor.r + "\nBase: " + baseColor.r + "\n Draw: " + drawColor.r);
 
                         drawColor.r = alpha * penColor.r + baseColor.r * (1 - alpha);
                         drawColor.g = alpha * penColor.g + baseColor.g * (1 - alpha);
