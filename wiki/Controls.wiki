@@ -3,7 +3,8 @@
 
 == Keyboard Controls ==
 
-_Currently: none_
+  * _Ctrl + Z_ - Undo
+  * _Ctrl + Y_ - Redo
 
 
 == Mouse Controls ==
