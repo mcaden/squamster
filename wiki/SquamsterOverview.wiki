@@ -9,16 +9,17 @@ Squamster is a mesh viewer with plans to grow into a fully-featured mesh painter
 == Features ==
 
   * View Ogre .mesh files
-  * View all animation states within a selected mesh
+  * Play and pause all animations for a selected mesh
   * View all textures currently associated with a selected mesh
   * Full camera controls including zoom, rotate, and pan
+  * Paint directly on any texture attached to a mesh in real-time
+  * Customizable brushes with size and opacity controls 
 
 == Upcoming features ==
 
-  * Paint directly on a mesh
   * Customizable lights
-  * Customizable brushes with opacity and feathering controls 
   * Additional paint tools like blur, sharpen, smudge, burn, and dodge.
+  * Customizable user settings like undo history size and resource paths.
 
 == Down the road ==
 
