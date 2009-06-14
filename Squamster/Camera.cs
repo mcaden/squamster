@@ -44,12 +44,11 @@ namespace Squamster
 
         SceneManager mSceneMgr;
 
-        const float defaultCameraNearDistance = 200;
-        const float defaultCameraFarDistance = 400000;
         const float defaultZoomSlowdownDistance = 200;
+        const float defaultOrthoWindowHeight = 600;
+        const float defaultOrthoWindowWidth = 800;
 
         float mTightness; // Determines the movement of the camera - 1 means tight movement, while 0 means no movement
-        float scale = 200f; //Orthographic Zoom
 
 
         public ExtendedCamera( String name, String sceneMgrName, String camName ) 
@@ -58,8 +57,8 @@ namespace Squamster
 	        mSceneMgr = Root.Singleton.GetSceneManager( sceneMgrName );
             mCamera = mSceneMgr.GetCamera( camName );
             mCamera.ProjectionType = ProjectionType.PT_ORTHOGRAPHIC;
-            mCamera.FarClipDistance = defaultCameraFarDistance;
-            mCamera.NearClipDistance = defaultCameraNearDistance; 
+
+            mCamera.SetOrthoWindow(defaultOrthoWindowWidth, defaultOrthoWindowHeight);
             
             mSceneMgr.AmbientLight = new Mogre.ColourValue(0.5f,0.5f,0.5f);
             mLight = mSceneMgr.CreateLight("Light");
@@ -113,8 +112,6 @@ namespace Squamster
             mSpinNode.Position = newPosition;
             mSpinNode.ResetOrientation();
             mPitchNode.ResetOrientation();
-            scale = defaultCameraNearDistance;
-            mCamera.NearClipDistance = defaultCameraNearDistance;
             instantUpdate();
         }
 
@@ -130,20 +127,10 @@ namespace Squamster
 
         public void cameraZoom(float zoomFactor)
         {
-            if (scale < defaultZoomSlowdownDistance)
+            if (mCamera.OrthoWindowWidth - zoomFactor * mCamera.OrthoWindowWidth / defaultOrthoWindowWidth > 0.001 && mCamera.OrthoWindowHeight - zoomFactor * .75f * mCamera.OrthoWindowHeight / defaultOrthoWindowHeight > 0.001)
             {
-                scale = scale + (zoomFactor * -1 * scale / defaultZoomSlowdownDistance);
+                mCamera.SetOrthoWindow(mCamera.OrthoWindowWidth - zoomFactor * mCamera.OrthoWindowWidth / defaultOrthoWindowWidth, mCamera.OrthoWindowHeight - zoomFactor * .75f * mCamera.OrthoWindowHeight / defaultOrthoWindowHeight );
             }
-            else
-            {
-                scale = scale + (zoomFactor * -1);
-            }
-            if (scale < .01f)
-            {
-                scale = 0.01f;
-            }
-
-            mCamera.NearClipDistance = scale;
         }
         public void cameraYaw(Degree yawAmount)
         {
@@ -152,8 +139,8 @@ namespace Squamster
 
         public void pan( Vector3 moveAmount )
         {
-            mSightNode.Translate(moveAmount / (1000 / scale), Node.TransformSpace.TS_LOCAL);
-            mSpinNode.Translate(moveAmount / (1000 / scale), Node.TransformSpace.TS_LOCAL);
+            mSightNode.Translate(moveAmount * mCamera.OrthoWindowWidth / defaultOrthoWindowWidth, Node.TransformSpace.TS_LOCAL);
+            mSpinNode.Translate(moveAmount * mCamera.OrthoWindowWidth / defaultOrthoWindowWidth, Node.TransformSpace.TS_LOCAL);
         }
 
         public Camera getOgreCamera

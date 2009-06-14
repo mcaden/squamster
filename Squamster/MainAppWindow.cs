@@ -33,7 +33,7 @@ namespace Squamster
 {
     public partial class OgreForm : Form
     {
-        const string brushPath = "media/brushes/";
+        const string brushPath = "../../media/brushes/";
 
         public static Root mRoot = null;
         public static SceneManager mSceneMgr = null;
@@ -622,6 +622,7 @@ namespace Squamster
                     undoList.RemoveAt(0);
                     mBuffer.Unlock();
                 }
+                updateTexturePreview();
                 LogManager.Singleton.LogMessage("-= Undo Finished - Undo history currently contains: " + undoList.Count.ToString() + " actions =-");
             }
         }
@@ -647,6 +648,7 @@ namespace Squamster
                     redoList.RemoveAt(0);
                     mBuffer.Unlock();
                 }
+                updateTexturePreview();
                 LogManager.Singleton.LogMessage("-= Redo Finished - Undo history currently contains: " + undoList.Count.ToString() + " actions =-");
             }
         }
@@ -843,6 +845,9 @@ namespace Squamster
         }
         private void selectTexture(object sender, EventArgs e)
         {
+            undoList.Clear();
+            redoList.Clear();
+            
             string fullPath = texturePreviewList.Images.Keys[texList.SelectedIndex];
             pictureBox1.Image = texturePreviewList.Images[texList.SelectedIndex];
             string texture = fullPath;
@@ -851,7 +856,6 @@ namespace Squamster
             {
                 LogManager.Singleton.LogMessage("Attempting to set texture:" + texturePreviewList.Images.Keys[texList.SelectedIndex]);
                 meshPainter.setActiveTexture(texturePreviewList.Images.Keys[texList.SelectedIndex]);
-                
             }
             else
             {
@@ -954,12 +958,41 @@ namespace Squamster
             {
                 meshPainter.saveCurrentTextureAs(saveDialog.FileName);
             }
+            saveDialog.Dispose();
+            saveDialog = null;
         }
 #endregion
 
+        private void invertColorsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.INVERT, null);
+            updateTexturePreview();
+        }
 
-        
+        private void convertToGrayscaleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.GRAYSCALE, null);
+            updateTexturePreview();
+        }
 
-
+        private void brightnessToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
+            BrightnessContrastControl brightnessContrastForm = new BrightnessContrastControl();
+            DialogResult dResult = brightnessContrastForm.ShowDialog();
+            if (dResult == DialogResult.OK)
+            {
+                addToUndo();
+                meshPainter.applyFilter(Painter.Filters.BRIGHTNESS, brightnessContrastForm.getBrightness());
+                meshPainter.applyFilter(Painter.Filters.CONTRAST, brightnessContrastForm.getContrast());
+                
+            }
+            brightnessContrastForm.Close();
+            brightnessContrastForm.Dispose();
+            brightnessContrastForm = null;
+            updateTexturePreview();
+        }
     }
 }
