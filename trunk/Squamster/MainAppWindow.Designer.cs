@@ -66,6 +66,10 @@
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.Menu_View_Paint = new System.Windows.Forms.ToolStripMenuItem();
             this.Menu_View_View = new System.Windows.Forms.ToolStripMenuItem();
+            this.filtersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.invertColorsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.convertToGrayscaleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.brightnessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.viewPanel.SuspendLayout();
@@ -332,7 +336,7 @@
             this.viewPanel.Location = new System.Drawing.Point(0, 0);
             this.viewPanel.Margin = new System.Windows.Forms.Padding(0);
             this.viewPanel.Name = "viewPanel";
-            this.viewPanel.Size = new System.Drawing.Size(143, 600);
+            this.viewPanel.Size = new System.Drawing.Size(137, 605);
             this.viewPanel.TabIndex = 1;
             // 
             // paintPanel
@@ -352,7 +356,7 @@
             this.paintPanel.Location = new System.Drawing.Point(0, 0);
             this.paintPanel.Margin = new System.Windows.Forms.Padding(0);
             this.paintPanel.Name = "paintPanel";
-            this.paintPanel.Size = new System.Drawing.Size(143, 600);
+            this.paintPanel.Size = new System.Drawing.Size(137, 605);
             this.paintPanel.TabIndex = 3;
             // 
             // label2
@@ -478,14 +482,17 @@
             // menuStrip1
             // 
             this.menuStrip1.BackColor = System.Drawing.Color.Silver;
-            this.menuStrip1.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.menuStrip1.Font = new System.Drawing.Font("Courier New", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.viewToolStripMenuItem});
+            this.viewToolStripMenuItem,
+            this.filtersToolStripMenuItem});
+            this.menuStrip1.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.Flow;
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(0);
-            this.menuStrip1.Size = new System.Drawing.Size(944, 24);
+            this.menuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
+            this.menuStrip1.Size = new System.Drawing.Size(944, 19);
             this.menuStrip1.Stretch = false;
             this.menuStrip1.TabIndex = 3;
             this.menuStrip1.Text = "menuStrip1";
@@ -568,13 +575,44 @@
             this.Menu_View_View.Text = "&View";
             this.Menu_View_View.Click += new System.EventHandler(this.viewToolStripMenuItem1_Click);
             // 
+            // filtersToolStripMenuItem
+            // 
+            this.filtersToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.invertColorsToolStripMenuItem,
+            this.convertToGrayscaleToolStripMenuItem,
+            this.brightnessToolStripMenuItem});
+            this.filtersToolStripMenuItem.Name = "filtersToolStripMenuItem";
+            this.filtersToolStripMenuItem.Size = new System.Drawing.Size(43, 24);
+            this.filtersToolStripMenuItem.Text = "&Filters";
+            // 
+            // invertColorsToolStripMenuItem
+            // 
+            this.invertColorsToolStripMenuItem.Name = "invertColorsToolStripMenuItem";
+            this.invertColorsToolStripMenuItem.Size = new System.Drawing.Size(158, 22);
+            this.invertColorsToolStripMenuItem.Text = "&Invert Colors";
+            this.invertColorsToolStripMenuItem.Click += new System.EventHandler(this.invertColorsToolStripMenuItem_Click);
+            // 
+            // convertToGrayscaleToolStripMenuItem
+            // 
+            this.convertToGrayscaleToolStripMenuItem.Name = "convertToGrayscaleToolStripMenuItem";
+            this.convertToGrayscaleToolStripMenuItem.Size = new System.Drawing.Size(158, 22);
+            this.convertToGrayscaleToolStripMenuItem.Text = "Convert to &Grayscale";
+            this.convertToGrayscaleToolStripMenuItem.Click += new System.EventHandler(this.convertToGrayscaleToolStripMenuItem_Click);
+            // 
+            // brightnessToolStripMenuItem
+            // 
+            this.brightnessToolStripMenuItem.Name = "brightnessToolStripMenuItem";
+            this.brightnessToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.brightnessToolStripMenuItem.Text = "&Brightness && Contrast";
+            this.brightnessToolStripMenuItem.Click += new System.EventHandler(this.brightnessToolStripMenuItem_Click);
+            // 
             // splitContainer1
             // 
             this.splitContainer1.BackColor = System.Drawing.Color.Gray;
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainer1.IsSplitterFixed = true;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 24);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 19);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(0);
             this.splitContainer1.Name = "splitContainer1";
             // 
@@ -591,8 +629,8 @@
             // 
             this.splitContainer1.Panel2.Controls.Add(this.paintPanel);
             this.splitContainer1.Panel2.Controls.Add(this.viewPanel);
-            this.splitContainer1.Size = new System.Drawing.Size(944, 600);
-            this.splitContainer1.SplitterDistance = 800;
+            this.splitContainer1.Size = new System.Drawing.Size(944, 605);
+            this.splitContainer1.SplitterDistance = 806;
             this.splitContainer1.SplitterWidth = 1;
             this.splitContainer1.TabIndex = 4;
             // 
@@ -669,6 +707,10 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.NumericUpDown brushOpacityControl;
         private System.Windows.Forms.NumericUpDown brushScaleControl;
+        private System.Windows.Forms.ToolStripMenuItem filtersToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem invertColorsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem convertToGrayscaleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem brightnessToolStripMenuItem;
 
     }
 }

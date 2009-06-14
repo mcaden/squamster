@@ -354,6 +354,200 @@ namespace Squamster
 
         }
 
+        public void applyFilter(Filters filter, Object arguments)
+        {
+            switch (filter)
+            { 
+                case Filters.INVERT:
+                    invertFilter(customTextures[activeTexture]);
+                    break;
+                case Filters.GRAYSCALE:
+                    grayscaleFilter(customTextures[activeTexture]);
+                    break;
+                case Filters.BRIGHTNESS:
+                    brightnessFilter(customTextures[activeTexture], (float)arguments);
+                    break;
+                case Filters.CONTRAST:
+                    contrastFilter(customTextures[activeTexture], (float)arguments);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public enum Filters
+        { 
+            INVERT,
+            CONTRAST,
+            BRIGHTNESS,
+            GRAYSCALE
+        }
+
+        private void invertFilter( Mogre.TexturePtr texture )
+        {
+            unsafe
+            {
+                uint texWidth = customTextures[activeTexture].Width;
+                uint texHeight = customTextures[activeTexture].Height;
+                HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                PixelBox texEdit = meshTexBuffer.CurrentLock;
+                for (uint x = 0; x < texWidth; x++)
+                {
+                    for (uint y = 0; y < texHeight; y++)
+                    {
+                        Box writebox = new Box(x, y, x, y);
+
+                        ColourValue baseColor = new ColourValue();
+
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                        ColourValue drawColor = new ColourValue();
+                        drawColor.a = baseColor.a;
+                        drawColor.r = 1 - baseColor.r;
+                        drawColor.g = 1 - baseColor.g;
+                        drawColor.b = 1 - baseColor.b;
+
+                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                    }
+                }
+                meshTexBuffer.Unlock();
+            }
+        }
+
+        private void grayscaleFilter(Mogre.TexturePtr texture)
+        {
+            unsafe
+            {
+                uint texWidth = customTextures[activeTexture].Width;
+                uint texHeight = customTextures[activeTexture].Height;
+                HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                PixelBox texEdit = meshTexBuffer.CurrentLock;
+                for (uint x = 0; x < texWidth; x++)
+                {
+                    for (uint y = 0; y < texHeight; y++)
+                    {
+                        Box writebox = new Box(x, y, x, y);
+
+                        ColourValue baseColor = new ColourValue();
+
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                        ColourValue drawColor = new ColourValue();
+                        drawColor.a = baseColor.a;
+                        drawColor.r = drawColor.g = drawColor.b = (.288f * baseColor.r + .587f * baseColor.g + .114f * baseColor.b);
+
+                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                    }
+                }
+                meshTexBuffer.Unlock();
+            }
+        }
+
+        private void brightnessFilter(Mogre.TexturePtr texture, float value)
+        {
+            unsafe
+            {
+                uint texWidth = customTextures[activeTexture].Width;
+                uint texHeight = customTextures[activeTexture].Height;
+                HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                PixelBox texEdit = meshTexBuffer.CurrentLock;
+                for (uint x = 0; x < texWidth; x++)
+                {
+                    for (uint y = 0; y < texHeight; y++)
+                    {
+                        Box writebox = new Box(x, y, x, y);
+
+                        ColourValue baseColor = new ColourValue();
+
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                        ColourValue drawColor = new ColourValue();
+                        drawColor.a = baseColor.a;
+                        drawColor.r = baseColor.r + value;
+                        if (drawColor.r > 1)
+                        {
+                            drawColor.r = 1;
+                        }
+                        else if (drawColor.r < 0)
+                        {
+                            drawColor.r = 0;
+                        }
+                        drawColor.b = baseColor.b + value;
+                        if (drawColor.b > 1)
+                        {
+                            drawColor.b = 1;
+                        }
+                        else if (drawColor.b < 0)
+                        {
+                            drawColor.b = 0;
+                        }
+                        drawColor.g = baseColor.g + value;
+                        if (drawColor.g > 1)
+                        {
+                            drawColor.g = 1;
+                        }
+                        else if (drawColor.g < 0)
+                        {
+                            drawColor.g = 0;
+                        }
+
+                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                    }
+                }
+                meshTexBuffer.Unlock();
+            }
+        }
+
+        private void contrastFilter(Mogre.TexturePtr texture, float value)
+        {
+            value++;
+            unsafe
+            {
+                uint texWidth = customTextures[activeTexture].Width;
+                uint texHeight = customTextures[activeTexture].Height;
+                HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                PixelBox texEdit = meshTexBuffer.CurrentLock;
+                for (uint x = 0; x < texWidth; x++)
+                {
+                    for (uint y = 0; y < texHeight; y++)
+                    {
+                        Box writebox = new Box(x, y, x, y);
+
+                        ColourValue baseColor = new ColourValue();
+
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                        ColourValue drawColor = new ColourValue();
+                        drawColor.a = baseColor.a;
+                        drawColor.r = baseColor.r - 0.5f;
+                        drawColor.r *= value;
+                        drawColor.r += 0.5f;
+                        if (drawColor.r < 0) drawColor.r = 0;
+                        if (drawColor.r > 255) drawColor.r = 255;
+
+                        drawColor.g = baseColor.g - 0.5f;
+                        drawColor.g *= value;
+                        drawColor.g += 0.5f;
+                        if (drawColor.g < 0) drawColor.g = 0;
+                        if (drawColor.g > 255) drawColor.g = 255;
+
+                        drawColor.b = baseColor.b - 0.5f;
+                        drawColor.b *= value;
+                        drawColor.b += 0.5f;
+                        if (drawColor.b < 0) drawColor.b = 0;
+                        if (drawColor.b > 255) drawColor.b = 255;
+
+                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                    }
+                }
+                meshTexBuffer.Unlock();
+            }
+        }
+
         public string createDrawTexture(string name)
         {
             string drawTexName = "drawTex_" + name;

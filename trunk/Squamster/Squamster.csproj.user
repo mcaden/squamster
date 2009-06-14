@@ -13,12 +13,14 @@
     </ErrorReportUrlHistory>
     <FallbackCulture>en-US</FallbackCulture>
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
-    <ReferencePath>C:\mogre\Samples\Squamster\Bin\Release\;C:\mogre\Samples\Squamster\Bin\Debug\</ReferencePath>
+    <ReferencePath>
+    </ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <StartWorkingDirectory>C:\mogre\Samples\Squamster\Bin\Debug\</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Release</StartWorkingDirectory>
+    <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <StartWorkingDirectory>C:\mogre\Samples\Squamster\Bin\Release\</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Release\</StartWorkingDirectory>
   </PropertyGroup>
 </Project>
