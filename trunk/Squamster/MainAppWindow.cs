@@ -470,7 +470,7 @@ namespace Squamster
                             mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), currentTex.Width, currentTex.Height, currentTex.Format);
                             currentTex.GetBuffer().Unlock();
                             LogManager.Singleton.LogMessage("Creating preview image");
-                            System.Drawing.Image texImage = MogreImageToBitmap(mImage);
+                            System.Drawing.Image texImage = Painter.MogreImageToBitmap(mImage);
                             LogManager.Singleton.LogMessage("Registering image");
                             texturePreviewList.Images.Add(currentTex.Name, texImage);
                             LogManager.Singleton.LogMessage("Adding image to list...");
@@ -566,7 +566,7 @@ namespace Squamster
                     mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), currentTex.Width, currentTex.Height, currentTex.Format);
                     currentTex.GetBuffer().Unlock();
                     LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Creating preview image...");
-                    System.Drawing.Image texImage = MogreImageToBitmap(mImage);
+                    System.Drawing.Image texImage = Painter.MogreImageToBitmap(mImage);
                     LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Replacing preview...");
                     pictureBox1.Image = texImage;
                 }
@@ -653,30 +653,7 @@ namespace Squamster
             }
         }
 
-        private Bitmap MogreImageToBitmap(Mogre.Image img)
-        {
-            unsafe
-            {
-                Bitmap bm = new Bitmap((int)img.Width, (int)img.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, (int)img.Width, (int)img.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bm.PixelFormat);
-                int PixelSize = 4;
-
-                for (int y = 0; y < bmd.Height; y++)
-                {
-                    byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
-                    for (int x = 0; x < bmd.Width; x++)
-                    {
-                        Mogre.ColourValue color = img.GetColourAt(x, y, 0);
-                        row[x * PixelSize] = (byte)(color.b * 255);
-                        row[x * PixelSize + 1] = (byte)(color.g * 255);
-                        row[x * PixelSize + 2] = (byte)(color.r * 255);
-                        row[x * PixelSize + 3] = (byte)(color.a * 255);
-                    }
-                }
-                bm.UnlockBits(bmd);
-                return bm;
-            }
-        }
+        
 
     #endregion        
     #region Animations
@@ -823,24 +800,27 @@ namespace Squamster
             meshPainter.saveCurrentTextureAs(path);
         }
         private void drawPreview(PointF drawPoint)
-        { 
-            int picBoxWidth = pictureBox1.Size.Width;
-            int picBoxHeight = pictureBox1.Size.Height;
-
-            System.Drawing.Graphics objGraphic = pictureBox1.CreateGraphics();
-
-
-            if (drawPoint.X >= 0 && drawPoint.Y >= 0 && drawPoint.X <= 1 && drawPoint.Y <= 1)
+        {
+            if (drawPoint.X >= 0 && drawPoint.Y >= 0)
             {
+                int picBoxWidth = pictureBox1.Size.Width;
+                int picBoxHeight = pictureBox1.Size.Height;
 
-                System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
-                int x = (int)((float)drawPoint.X * ((float)picBoxWidth - 1));
-                int y = (int)((float)drawPoint.Y * ((float)picBoxHeight - 1));
+                System.Drawing.Graphics objGraphic = pictureBox1.CreateGraphics();
 
-                objGraphic.DrawRectangle(pen, x, y, 1, 1);
 
-                System.Drawing.Drawing2D.GraphicsState graph = objGraphic.Save();
-                objGraphic.Restore(graph);
+                if (drawPoint.X >= 0 && drawPoint.Y >= 0 && drawPoint.X <= 1 && drawPoint.Y <= 1)
+                {
+
+                    System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
+                    int x = (int)((float)drawPoint.X * ((float)picBoxWidth - 1));
+                    int y = (int)((float)drawPoint.Y * ((float)picBoxHeight - 1));
+
+                    objGraphic.DrawRectangle(pen, x, y, 1, 1);
+
+                    System.Drawing.Drawing2D.GraphicsState graph = objGraphic.Save();
+                    objGraphic.Restore(graph);
+                }
             }
         }
         private void selectTexture(object sender, EventArgs e)
@@ -977,21 +957,61 @@ namespace Squamster
             updateTexturePreview();
         }
 
+        internal void previewBrightnessContrastFilter( float brightness, float contrast )
+        {
+            undo();
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.CONTRAST, contrast);
+            meshPainter.applyFilter(Painter.Filters.BRIGHTNESS, brightness);
+            updateTexturePreview();
+        }
+
         private void brightnessToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            
-            BrightnessContrastControl brightnessContrastForm = new BrightnessContrastControl();
-            DialogResult dResult = brightnessContrastForm.ShowDialog();
-            if (dResult == DialogResult.OK)
+            addToUndo();
+            BrightnessContrastControl brightnessContrastForm = new BrightnessContrastControl(this);
+            brightnessContrastForm.Show();
+            meshPainter.paintMode = Painter.PaintModes.FILTER;
+            this.menuStrip1.Enabled = false;
+            Btn_Paint.Enabled = false;
+            Btn_View.Enabled = false;
+            paintPanel.Enabled = false;
+            viewPanel.Enabled = false;
+            brightnessContrastForm.FormClosing += new FormClosingEventHandler(brightnessContrastForm_FormClosing);
+        }
+
+        void brightnessContrastForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (((BrightnessContrastControl)sender).DialogResult == DialogResult.Cancel)
             {
-                addToUndo();
-                meshPainter.applyFilter(Painter.Filters.BRIGHTNESS, brightnessContrastForm.getBrightness());
-                meshPainter.applyFilter(Painter.Filters.CONTRAST, brightnessContrastForm.getContrast());
-                
+                undo();
             }
-            brightnessContrastForm.Close();
-            brightnessContrastForm.Dispose();
-            brightnessContrastForm = null;
+            meshPainter.paintMode = Painter.PaintModes.BRUSH;
+            this.menuStrip1.Enabled = true;
+            Btn_Paint.Enabled = true;
+            Btn_View.Enabled = true;
+            paintPanel.Enabled = true;
+            viewPanel.Enabled = true;
+        }
+
+        private void blurToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.BLUR, null);
+            updateTexturePreview();
+        }
+
+        private void gaussianBlurToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.GAUSSIAN_BLUR, null);
+            updateTexturePreview();
+        }
+
+        private void sharpenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            addToUndo();
+            meshPainter.applyFilter(Painter.Filters.SHARPEN, null);
             updateTexturePreview();
         }
     }

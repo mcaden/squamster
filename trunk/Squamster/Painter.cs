@@ -43,6 +43,7 @@ namespace Squamster
         public int activeTexture = -1;
         public TexturePtr uvEncodedTexture;
         StringVector materials = new StringVector();
+        public PaintModes paintMode = PaintModes.BRUSH;
 
         public static ColourValue penColor = new ColourValue(1, 0, 0, 1);
 
@@ -166,6 +167,21 @@ namespace Squamster
         public PointF draw(int mouseX, int mouseY, ColourValue penColor)
         {
             PointF previewPoint = new PointF(-1, -1);
+            switch (paintMode)
+            { 
+                case PaintModes.BRUSH:
+                    useBrush(mouseX, mouseY, penColor);
+                    break;
+                case PaintModes.FILTER:
+                    break;
+            }
+
+            return previewPoint;
+        }
+
+        private PointF useBrush(int mouseX, int mouseY, ColourValue penColor)
+        {
+            PointF previewPoint = new PointF(-1, -1);
             if (activeTexture >= 0 && customTextures[activeTexture] != null)
             {
                 float uvX = 0;
@@ -235,10 +251,10 @@ namespace Squamster
 
                     Box writebox = new Box((uint)tl.X, (uint)tl.Y, (uint)br.X, (uint)br.Y);
 
-                    for (uint i = (uint)tl.X ; i < br.X; i++) 
-                    { 
-                        for (uint j = (uint)tl.Y ; j < br.Y ; j++) 
-                        { 
+                    for (uint i = (uint)tl.X; i < br.X; i++)
+                    {
+                        for (uint j = (uint)tl.Y; j < br.Y; j++)
+                        {
                             writebox = new Box(i, j, i, j);
                             PixelUtil.UnpackColour(&uvColorValue, uvEncodedTexture.Format, pbox.GetSubVolume(writebox).data.ToPointer());
 
@@ -260,20 +276,20 @@ namespace Squamster
 
                                 previewPoint.X = red;
                                 previewPoint.Y = green;
-                                
+
                                 uvX = (red * (customTextures[activeTexture].Width - 1));
                                 uvY = (green * (customTextures[activeTexture].Height - 1));
 
-                                if( !points.Contains( new Point( (int)uvX, (int)uvY ) ))
+                                if (!points.Contains(new Point((int)uvX, (int)uvY)))
                                 {
-                                    points.Add( new Point( (int)uvX, (int)uvY));
-                                    brushPoints.Add(new Point( (int)(i - tl.X), (int)(j - tl.Y)));
+                                    points.Add(new Point((int)uvX, (int)uvY));
+                                    brushPoints.Add(new Point((int)(i - tl.X), (int)(j - tl.Y)));
                                 }
                             }
-                        } 
+                        }
                     }
 
-                    for( int i = 0; i < points.Count; i++ )
+                    for (int i = 0; i < points.Count; i++)
                     {
                         writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
 
@@ -294,12 +310,12 @@ namespace Squamster
                         PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
                     }
 
-                    
-                    
-                    meshTexBuffer.Unlock();    
+
+
+                    meshTexBuffer.Unlock();
                     buffer.Unlock();
                 }
-            } 
+            }
             return previewPoint;
         }
 
@@ -370,6 +386,15 @@ namespace Squamster
                 case Filters.CONTRAST:
                     contrastFilter(customTextures[activeTexture], (float)arguments);
                     break;
+                case Filters.BLUR:
+                    blurFilter(customTextures[activeTexture]);
+                    break;
+                case Filters.GAUSSIAN_BLUR:
+                    gaussianBlurFilter(customTextures[activeTexture]);
+                    break;
+                case Filters.SHARPEN:
+                    sharpenFilter(customTextures[activeTexture]);
+                    break;
                 default:
                     break;
             }
@@ -380,7 +405,16 @@ namespace Squamster
             INVERT,
             CONTRAST,
             BRIGHTNESS,
-            GRAYSCALE
+            GRAYSCALE,
+            BLUR,
+            GAUSSIAN_BLUR,
+            SHARPEN
+        }
+
+        public enum PaintModes
+        {
+            BRUSH,
+            FILTER
         }
 
         private void invertFilter( Mogre.TexturePtr texture )
@@ -439,6 +473,360 @@ namespace Squamster
                         drawColor.r = drawColor.g = drawColor.b = (.288f * baseColor.r + .587f * baseColor.g + .114f * baseColor.b);
 
                         PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                    }
+                }
+                meshTexBuffer.Unlock();
+            }
+        }
+
+        private void blurFilter(Mogre.TexturePtr texture)
+        {
+            unsafe
+            {
+                customTextures[activeTexture].GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
+                PixelBox mPboxdst = customTextures[activeTexture].GetBuffer().CurrentLock;
+                Mogre.Image mImage = new Mogre.Image();
+                LogManager.Singleton.LogMessage("Loading texture data into image");
+                mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), customTextures[activeTexture].Width, customTextures[activeTexture].Height, customTextures[activeTexture].Format);
+                customTextures[activeTexture].GetBuffer().Unlock();
+                LogManager.Singleton.LogMessage("Creating preview image");
+                System.Drawing.Bitmap texImage = MogreImageToBitmap(mImage);
+                ConvMatrix m = new ConvMatrix();
+                m.SetAll(1);
+                m.Factor = 9;
+
+                Conv3x3(texImage, m);
+
+                copyBitmapToTexture(customTextures[activeTexture], texImage);
+            }
+        }
+
+        private void gaussianBlurFilter(Mogre.TexturePtr texture)
+        {
+            unsafe
+            {
+                customTextures[activeTexture].GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
+                PixelBox mPboxdst = customTextures[activeTexture].GetBuffer().CurrentLock;
+                Mogre.Image mImage = new Mogre.Image();
+                LogManager.Singleton.LogMessage("Loading texture data into image");
+                mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), customTextures[activeTexture].Width, customTextures[activeTexture].Height, customTextures[activeTexture].Format);
+                customTextures[activeTexture].GetBuffer().Unlock();
+                LogManager.Singleton.LogMessage("Creating preview image");
+                System.Drawing.Bitmap texImage = MogreImageToBitmap(mImage);
+                ConvMatrix m = new ConvMatrix();
+                m.SetAll(1);
+                m.Pixel = 4;
+                m.BottomMid = 2;
+                m.TopMid = 2;
+                m.MidLeft = 2;
+                m.MidRight = 2;
+                m.Factor = 16;
+
+                Conv3x3(texImage, m);
+
+                copyBitmapToTexture(customTextures[activeTexture], texImage);
+            }
+        }
+
+        private void sharpenFilter(Mogre.TexturePtr texture)
+        {
+            unsafe
+            {
+                customTextures[activeTexture].GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
+                PixelBox mPboxdst = customTextures[activeTexture].GetBuffer().CurrentLock;
+                Mogre.Image mImage = new Mogre.Image();
+                LogManager.Singleton.LogMessage("Loading texture data into image");
+                mImage.LoadDynamicImage((byte*)mPboxdst.data.ToPointer(), customTextures[activeTexture].Width, customTextures[activeTexture].Height, customTextures[activeTexture].Format);
+                customTextures[activeTexture].GetBuffer().Unlock();
+                LogManager.Singleton.LogMessage("Creating preview image");
+                System.Drawing.Bitmap texImage = MogreImageToBitmap(mImage);
+                ConvMatrix m = new ConvMatrix();
+                m.SetAll(0);
+                m.Pixel = 11;
+                m.BottomMid = -2;
+                m.TopMid = -2;
+                m.MidLeft = -2;
+                m.MidRight = -2;
+                m.Factor = 3;
+
+                Conv3x3(texImage, m);
+
+                copyBitmapToTexture(customTextures[activeTexture], texImage);
+            }
+        }
+
+        unsafe private void copyBitmapToTexture(TexturePtr texture, System.Drawing.Bitmap texImage)
+        {
+            texture.GetBuffer().Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+            PixelBox mPboxdst = texture.GetBuffer().CurrentLock;
+            System.Drawing.Imaging.BitmapData bmd = texImage.LockBits(new System.Drawing.Rectangle(0, 0, (int)texImage.Width, (int)texImage.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, texImage.PixelFormat);
+            int PixelSize = 4;
+
+            for (uint y = 0; y < bmd.Height; y++)
+            {
+                byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
+                for (uint x = 0; x < bmd.Width; x++)
+                {
+                    Box writebox = new Box(x, y, x, y);
+                    Mogre.ColourValue color = new ColourValue();
+                    color.b = (float)(Convert.ToInt32(row[x * PixelSize])) / 255;
+                    color.g = (float)(Convert.ToInt32(row[x * PixelSize + 1])) / 255;
+                    color.r = (float)(Convert.ToInt32(row[x * PixelSize + 2])) / 255;
+                    color.a = 1;
+
+                    PixelUtil.PackColour(color, texture.Format, mPboxdst.GetSubVolume(writebox).data.ToPointer());
+                }
+            }
+            texImage.UnlockBits(bmd);
+            texture.GetBuffer().Unlock();
+        }
+
+        public static Bitmap MogreImageToBitmap(Mogre.Image img)
+        {
+            unsafe
+            {
+                Bitmap bm = new Bitmap((int)img.Width, (int)img.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, (int)img.Width, (int)img.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bm.PixelFormat);
+                int PixelSize = 4;
+
+                for (int y = 0; y < bmd.Height; y++)
+                {
+                    byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
+                    for (int x = 0; x < bmd.Width; x++)
+                    {
+                        Mogre.ColourValue color = img.GetColourAt(x, y, 0);
+                        row[x * PixelSize] = (byte)(color.b * 255);
+                        row[x * PixelSize + 1] = (byte)(color.g * 255);
+                        row[x * PixelSize + 2] = (byte)(color.r * 255);
+                        row[x * PixelSize + 3] = (byte)(color.a * 255);
+                    }
+                }
+                bm.UnlockBits(bmd);
+                return bm;
+            }
+        }
+
+        public class ConvMatrix
+        {
+            public int TopLeft = 0, TopMid = 0, TopRight = 0;
+            public int MidLeft = 0, Pixel = 1, MidRight = 0;
+            public int BottomLeft = 0, BottomMid = 0, BottomRight = 0;
+            public int Factor = 1;
+            public int Offset = 0;
+            public void SetAll(int nVal)
+            {
+                TopLeft = TopMid = TopRight = MidLeft = Pixel = MidRight =
+                          BottomLeft = BottomMid = BottomRight = nVal;
+            }
+        }
+
+        public static bool Conv3x3(Bitmap b, ConvMatrix m)
+        {
+            // Avoid divide by zero errors
+
+            if (0 == m.Factor)
+                return false; Bitmap
+
+            // GDI+ still lies to us - the return format is BGR, NOT RGB. 
+
+            bSrc = (Bitmap)b.Clone();
+            System.Drawing.Imaging.BitmapData bmData = b.LockBits(new System.Drawing.Rectangle(0, 0, b.Width, b.Height),
+                                System.Drawing.Imaging.ImageLockMode.ReadWrite,
+                                System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            System.Drawing.Imaging.BitmapData bmSrc = bSrc.LockBits(new System.Drawing.Rectangle(0, 0, bSrc.Width, bSrc.Height),
+                               System.Drawing.Imaging.ImageLockMode.ReadWrite,
+                               System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            int stride = bmData.Stride;
+            int stride2 = stride * 2;
+
+            System.IntPtr Scan0 = bmData.Scan0;
+            System.IntPtr SrcScan0 = bmSrc.Scan0;
+
+            unsafe
+            {
+                byte* p = (byte*)(void*)Scan0;
+                byte* pSrc = (byte*)(void*)SrcScan0;
+                int nOffset = stride - b.Width * 3;
+                int nWidth = b.Width - 2;
+                int nHeight = b.Height - 2;
+
+                int nPixel;
+
+                for (int y = 0; y < nHeight; ++y)
+                {
+                    for (int x = 0; x < nWidth; ++x)
+                    {
+                        nPixel = ((((pSrc[2] * m.TopLeft) +
+                            (pSrc[5] * m.TopMid) +
+                            (pSrc[8] * m.TopRight) +
+                            (pSrc[2 + stride] * m.MidLeft) +
+                            (pSrc[5 + stride] * m.Pixel) +
+                            (pSrc[8 + stride] * m.MidRight) +
+                            (pSrc[2 + stride2] * m.BottomLeft) +
+                            (pSrc[5 + stride2] * m.BottomMid) +
+                            (pSrc[8 + stride2] * m.BottomRight))
+                            / m.Factor) + m.Offset);
+
+                        if (nPixel < 0) nPixel = 0;
+                        if (nPixel > 255) nPixel = 255;
+                        p[5 + stride] = (byte)nPixel;
+
+                        nPixel = ((((pSrc[1] * m.TopLeft) +
+                            (pSrc[4] * m.TopMid) +
+                            (pSrc[7] * m.TopRight) +
+                            (pSrc[1 + stride] * m.MidLeft) +
+                            (pSrc[4 + stride] * m.Pixel) +
+                            (pSrc[7 + stride] * m.MidRight) +
+                            (pSrc[1 + stride2] * m.BottomLeft) +
+                            (pSrc[4 + stride2] * m.BottomMid) +
+                            (pSrc[7 + stride2] * m.BottomRight))
+                            / m.Factor) + m.Offset);
+
+                        if (nPixel < 0) nPixel = 0;
+                        if (nPixel > 255) nPixel = 255;
+                        p[4 + stride] = (byte)nPixel;
+
+                        nPixel = ((((pSrc[0] * m.TopLeft) +
+                                       (pSrc[3] * m.TopMid) +
+                                       (pSrc[6] * m.TopRight) +
+                                       (pSrc[0 + stride] * m.MidLeft) +
+                                       (pSrc[3 + stride] * m.Pixel) +
+                                       (pSrc[6 + stride] * m.MidRight) +
+                                       (pSrc[0 + stride2] * m.BottomLeft) +
+                                       (pSrc[3 + stride2] * m.BottomMid) +
+                                       (pSrc[6 + stride2] * m.BottomRight))
+                            / m.Factor) + m.Offset);
+
+                        if (nPixel < 0) nPixel = 0;
+                        if (nPixel > 255) nPixel = 255;
+                        p[3 + stride] = (byte)nPixel;
+
+                        p += 3;
+                        pSrc += 3;
+                    }
+
+                    p += nOffset;
+                    pSrc += nOffset;
+                }
+            }
+
+            b.UnlockBits(bmData);
+            bSrc.UnlockBits(bmSrc);
+            return true;
+        }
+
+        private void OLD_blurFilter(Mogre.TexturePtr texture)
+        {
+            unsafe
+            {
+                uint texWidth = customTextures[activeTexture].Width;
+                uint texHeight = customTextures[activeTexture].Height;
+                HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                PixelBox texEdit = meshTexBuffer.CurrentLock;
+                for (uint x = 0; x < texWidth; x++)
+                {
+                    for (uint y = 0; y < texHeight; y++)
+                    {
+                        float sumR = 0;
+                        float sumG = 0;
+                        float sumB = 0;
+                        int numPixels = 0;
+                        ColourValue baseColor = new ColourValue();
+                        Box writebox;
+                        if (x > 0)
+                        {
+                            if (y > 0)
+                            {
+                                numPixels++;
+                                writebox = new Box(x - 1, y - 1, x - 1, y - 1);
+                                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                                sumR += baseColor.r;
+                                sumG += baseColor.g;
+                                sumB += baseColor.b;
+                            }
+                            numPixels++;
+                            writebox = new Box(x - 1, y, x - 1, y);
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                            sumR += baseColor.r;
+                            sumG += baseColor.g;
+                            sumB += baseColor.b;
+
+
+                            if (y < texHeight - 1)
+                            {
+                                numPixels++;
+                                writebox = new Box(x - 1, y + 1, x - 1, y + 1);
+                                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                                sumR += baseColor.r;
+                                sumG += baseColor.g;
+                                sumB += baseColor.b;
+
+                            }
+                        }
+                        if (y > 0)
+                        {
+                            numPixels++;
+                            writebox = new Box(x, y - 1, x, y - 1);
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                            sumR += baseColor.r;
+                            sumG += baseColor.g;
+                            sumB += baseColor.b;
+                            
+                            if (x < texWidth - 1)
+                            {
+                                numPixels++;
+                                writebox = new Box(x + 1, y - 1, x + 1, y - 1);
+                                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                                sumR += baseColor.r;
+                                sumG += baseColor.g;
+                                sumB += baseColor.b;
+                            }
+                        }
+
+                        if (y < texHeight - 1)
+                        {
+                            numPixels++;
+                            writebox = new Box(x, y + 1, x, y + 1);
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                            sumR += baseColor.r;
+                            sumG += baseColor.g;
+                            sumB += baseColor.b;
+
+                            if (x < texWidth - 1)
+                            {
+                                numPixels++;
+                                writebox = new Box(x + 1, y + 1, x + 1, y + 1);
+                                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                                sumR += baseColor.r;
+                                sumG += baseColor.g;
+                                sumB += baseColor.b;
+                            }
+                        }
+                        
+
+                        if (x < texWidth - 1)
+                        {
+                            numPixels++;
+                            writebox = new Box(x + 1, y, x + 1, y);
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                            sumR += baseColor.r;
+                            sumG += baseColor.g;
+                            sumB += baseColor.b;
+                        }
+
+                        numPixels++;
+                        writebox = new Box(x, y, x, y);
+                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                        sumR += baseColor.r;
+                        sumG += baseColor.g;
+                        sumB += baseColor.b;
+
+                        baseColor.r = sumR / numPixels;
+                        baseColor.g = sumG / numPixels;
+                        baseColor.b = sumB / numPixels;
+
+                        PixelUtil.PackColour(baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
                     }
                 }
                 meshTexBuffer.Unlock();

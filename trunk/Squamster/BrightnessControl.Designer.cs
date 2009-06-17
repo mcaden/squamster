@@ -51,6 +51,7 @@
             this.brightnessSlider.TickFrequency = 10;
             this.brightnessSlider.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
             this.brightnessSlider.Scroll += new System.EventHandler(this.slider_Scroll);
+            this.brightnessSlider.MouseUp += new System.Windows.Forms.MouseEventHandler(this.contrastSlider_MouseUp);
             // 
             // brightnessValue
             // 
@@ -89,6 +90,7 @@
             this.contrastSlider.TickFrequency = 10;
             this.contrastSlider.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
             this.contrastSlider.Scroll += new System.EventHandler(this.slider_Scroll);
+            this.contrastSlider.MouseUp += new System.Windows.Forms.MouseEventHandler(this.contrastSlider_MouseUp);
             // 
             // contrastValue
             // 
@@ -136,7 +138,7 @@
             this.btn_Okay.UseVisualStyleBackColor = true;
             this.btn_Okay.Click += new System.EventHandler(this.btn_Okay_Click);
             // 
-            // BrightnessControl
+            // BrightnessContrastControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -150,7 +152,7 @@
             this.Controls.Add(this.contrastSlider);
             this.Controls.Add(this.brightnessSlider);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
-            this.Name = "BrightnessControl";
+            this.Name = "BrightnessContrastControl";
             this.Text = "BrightnessControl";
             ((System.ComponentModel.ISupportInitialize)(this.brightnessSlider)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.contrastSlider)).EndInit();
