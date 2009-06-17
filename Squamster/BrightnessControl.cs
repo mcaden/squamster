@@ -12,6 +12,8 @@ namespace Squamster
     public partial class BrightnessContrastControl : Form
     {
         private int percentage = 0;
+        private bool sliding = false;
+        private OgreForm parent;
         public int Percentage
         {
             get
@@ -19,8 +21,9 @@ namespace Squamster
                 return percentage;
             }
         }
-        public BrightnessContrastControl()
+        public BrightnessContrastControl(OgreForm parentForm)
         {
+            parent = parentForm;
             InitializeComponent();
         }
 
@@ -98,6 +101,7 @@ namespace Squamster
             brightnessSlider.Value = brightness;
             int.TryParse(contrastValue.Text.Replace("%", "").Trim(), out contrast);
             contrastSlider.Value = contrast;
+            parent.previewBrightnessContrastFilter((float)brightness / 100, (float)contrast / 100);
         }
 
         private void updateValues()
@@ -108,6 +112,7 @@ namespace Squamster
 
         private void slider_Scroll(object sender, EventArgs e)
         {
+            sliding = true;
             updateValues();
         }
 
@@ -130,13 +135,22 @@ namespace Squamster
         private void btn_Cancel_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
-            this.Hide();
+            this.Close();
         }
 
         private void btn_Okay_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.OK;
-            this.Hide();
+            this.Close();
+        }
+
+        private void contrastSlider_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (sliding)
+            {
+                sliding = false;
+                parent.previewBrightnessContrastFilter((float)brightnessSlider.Value / 100, (float)contrastSlider.Value / 100);
+            }
         }
     }
 }
