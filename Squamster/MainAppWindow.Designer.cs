@@ -70,10 +70,12 @@
             this.invertColorsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.convertToGrayscaleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.brightnessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.blurToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gaussianBlurToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sharpenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.btn_Brush = new System.Windows.Forms.Button();
+            this.btn_Blur = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.viewPanel.SuspendLayout();
             this.paintPanel.SuspendLayout();
@@ -339,7 +341,7 @@
             this.viewPanel.Location = new System.Drawing.Point(0, 0);
             this.viewPanel.Margin = new System.Windows.Forms.Padding(0);
             this.viewPanel.Name = "viewPanel";
-            this.viewPanel.Size = new System.Drawing.Size(143, 605);
+            this.viewPanel.Size = new System.Drawing.Size(140, 606);
             this.viewPanel.TabIndex = 1;
             // 
             // paintPanel
@@ -347,6 +349,8 @@
             this.paintPanel.BackColor = System.Drawing.Color.Silver;
             this.paintPanel.BackgroundImage = global::Squamster.Properties.Resources.sidebar;
             this.paintPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.paintPanel.Controls.Add(this.btn_Blur);
+            this.paintPanel.Controls.Add(this.btn_Brush);
             this.paintPanel.Controls.Add(this.label2);
             this.paintPanel.Controls.Add(this.label1);
             this.paintPanel.Controls.Add(this.brushOpacityControl);
@@ -359,7 +363,7 @@
             this.paintPanel.Location = new System.Drawing.Point(0, 0);
             this.paintPanel.Margin = new System.Windows.Forms.Padding(0);
             this.paintPanel.Name = "paintPanel";
-            this.paintPanel.Size = new System.Drawing.Size(143, 605);
+            this.paintPanel.Size = new System.Drawing.Size(140, 606);
             this.paintPanel.TabIndex = 3;
             // 
             // label2
@@ -495,7 +499,7 @@
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(0);
             this.menuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.menuStrip1.Size = new System.Drawing.Size(944, 19);
+            this.menuStrip1.Size = new System.Drawing.Size(944, 18);
             this.menuStrip1.Stretch = false;
             this.menuStrip1.TabIndex = 3;
             this.menuStrip1.Text = "menuStrip1";
@@ -612,34 +616,6 @@
             this.brightnessToolStripMenuItem.Text = "Brightness && &Contrast";
             this.brightnessToolStripMenuItem.Click += new System.EventHandler(this.brightnessToolStripMenuItem_Click);
             // 
-            // splitContainer1
-            // 
-            this.splitContainer1.BackColor = System.Drawing.Color.Gray;
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
-            this.splitContainer1.IsSplitterFixed = true;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 19);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(0);
-            this.splitContainer1.Name = "splitContainer1";
-            // 
-            // splitContainer1.Panel1
-            // 
-            this.splitContainer1.Panel1.BackColor = System.Drawing.Color.Black;
-            this.splitContainer1.Panel1.Controls.Add(this.Btn_Paint);
-            this.splitContainer1.Panel1.Controls.Add(this.Btn_View);
-            this.splitContainer1.Panel1.Controls.Add(this.statsLabel);
-            this.splitContainer1.Panel1.MouseLeave += new System.EventHandler(this.splitContainer1_Panel1_MouseLeave_1);
-            this.splitContainer1.Panel1.MouseEnter += new System.EventHandler(this.splitContainer1_Panel1_MouseEnter_1);
-            // 
-            // splitContainer1.Panel2
-            // 
-            this.splitContainer1.Panel2.Controls.Add(this.paintPanel);
-            this.splitContainer1.Panel2.Controls.Add(this.viewPanel);
-            this.splitContainer1.Size = new System.Drawing.Size(944, 605);
-            this.splitContainer1.SplitterDistance = 800;
-            this.splitContainer1.SplitterWidth = 1;
-            this.splitContainer1.TabIndex = 4;
-            // 
             // blurToolStripMenuItem
             // 
             this.blurToolStripMenuItem.Name = "blurToolStripMenuItem";
@@ -660,6 +636,68 @@
             this.sharpenToolStripMenuItem.Size = new System.Drawing.Size(221, 22);
             this.sharpenToolStripMenuItem.Text = "&Sharpen";
             this.sharpenToolStripMenuItem.Click += new System.EventHandler(this.sharpenToolStripMenuItem_Click);
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.BackColor = System.Drawing.Color.Gray;
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.splitContainer1.IsSplitterFixed = true;
+            this.splitContainer1.Location = new System.Drawing.Point(0, 18);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(0);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.BackColor = System.Drawing.Color.Black;
+            this.splitContainer1.Panel1.Controls.Add(this.Btn_Paint);
+            this.splitContainer1.Panel1.Controls.Add(this.Btn_View);
+            this.splitContainer1.Panel1.Controls.Add(this.statsLabel);
+            this.splitContainer1.Panel1.MouseLeave += new System.EventHandler(this.splitContainer1_Panel1_MouseLeave_1);
+            this.splitContainer1.Panel1.MouseEnter += new System.EventHandler(this.splitContainer1_Panel1_MouseEnter_1);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.paintPanel);
+            this.splitContainer1.Panel2.Controls.Add(this.viewPanel);
+            this.splitContainer1.Size = new System.Drawing.Size(944, 606);
+            this.splitContainer1.SplitterDistance = 803;
+            this.splitContainer1.SplitterWidth = 1;
+            this.splitContainer1.TabIndex = 4;
+            // 
+            // btn_Brush
+            // 
+            this.btn_Brush.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Brush.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Brush.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Brush.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Brush.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Brush.ForeColor = System.Drawing.Color.White;
+            this.btn_Brush.Location = new System.Drawing.Point(46, 194);
+            this.btn_Brush.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Brush.Name = "btn_Brush";
+            this.btn_Brush.Size = new System.Drawing.Size(88, 23);
+            this.btn_Brush.TabIndex = 17;
+            this.btn_Brush.Text = "Brush";
+            this.btn_Brush.UseVisualStyleBackColor = false;
+            this.btn_Brush.Click += new System.EventHandler(this.btn_Brush_Click);
+            // 
+            // btn_Blur
+            // 
+            this.btn_Blur.BackColor = System.Drawing.Color.Black;
+            this.btn_Blur.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Blur.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Blur.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Blur.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Blur.ForeColor = System.Drawing.Color.White;
+            this.btn_Blur.Location = new System.Drawing.Point(46, 220);
+            this.btn_Blur.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Blur.Name = "btn_Blur";
+            this.btn_Blur.Size = new System.Drawing.Size(88, 24);
+            this.btn_Blur.TabIndex = 18;
+            this.btn_Blur.Text = "Blur";
+            this.btn_Blur.UseVisualStyleBackColor = false;
+            this.btn_Blur.Click += new System.EventHandler(this.btn_Blur_Click);
             // 
             // OgreForm
             // 
@@ -741,6 +779,8 @@
         private System.Windows.Forms.ToolStripMenuItem blurToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gaussianBlurToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem sharpenToolStripMenuItem;
+        private System.Windows.Forms.Button btn_Blur;
+        private System.Windows.Forms.Button btn_Brush;
 
     }
 }

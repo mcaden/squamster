@@ -986,7 +986,7 @@ namespace Squamster
             {
                 undo();
             }
-            meshPainter.paintMode = Painter.PaintModes.BRUSH;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
             this.menuStrip1.Enabled = true;
             Btn_Paint.Enabled = true;
             Btn_View.Enabled = true;
@@ -1013,6 +1013,22 @@ namespace Squamster
             addToUndo();
             meshPainter.applyFilter(Painter.Filters.SHARPEN, null);
             updateTexturePreview();
+        }
+
+        private void btn_Brush_Click(object sender, EventArgs e)
+        {
+            btn_Brush.BackColor = Color.FromArgb(64, 0, 0);
+            btn_Blur.BackColor = Color.Black;
+            meshPainter.currentTool = Painter.Tools.BRUSH;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+        }
+
+        private void btn_Blur_Click(object sender, EventArgs e)
+        {
+            meshPainter.currentTool = Painter.Tools.BLUR;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            btn_Blur.BackColor = Color.FromArgb(64, 0, 0);
+            btn_Brush.BackColor = Color.Black;
         }
     }
 }

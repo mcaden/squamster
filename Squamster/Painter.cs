@@ -37,13 +37,22 @@ namespace Squamster
 #endif        
         public List<TexturePtr> customTextures = new List<TexturePtr>();
         public List<System.Drawing.Bitmap> brushes = new List<System.Drawing.Bitmap>();
+        System.Drawing.Bitmap currentTransformedBrush;
         int mCurrentBrush = -1;
         float mBrushScale = 1;
         float mBrushOpacity = 1;
         public int activeTexture = -1;
         public TexturePtr uvEncodedTexture;
         StringVector materials = new StringVector();
-        public PaintModes paintMode = PaintModes.BRUSH;
+        public PaintModes paintMode = PaintModes.TOOLS;
+        public Tools currentTool = Tools.BRUSH;
+
+        public enum Tools
+        { 
+            BRUSH,
+            BLUR,
+            SHARPEN
+        }
 
         public static ColourValue penColor = new ColourValue(1, 0, 0, 1);
 
@@ -106,6 +115,7 @@ namespace Squamster
             set
             {
                 mCurrentBrush = value;
+                currentTransformedBrush = new Bitmap(brushes[currentBrush], new Size((int)(brushes[currentBrush].Width * mBrushScale), (int)(brushes[currentBrush].Height * mBrushScale)));
                 LogManager.Singleton.LogMessage("Current brush set as: " + mCurrentBrush.ToString());
             }
         }
@@ -125,6 +135,7 @@ namespace Squamster
             set
             {
                 mBrushScale = value;
+                currentTransformedBrush = new Bitmap(brushes[currentBrush], new Size((int)(brushes[currentBrush].Width * mBrushScale), (int)(brushes[currentBrush].Height * mBrushScale)));
             }
         }
 
@@ -169,8 +180,8 @@ namespace Squamster
             PointF previewPoint = new PointF(-1, -1);
             switch (paintMode)
             { 
-                case PaintModes.BRUSH:
-                    useBrush(mouseX, mouseY, penColor);
+                case PaintModes.TOOLS:
+                    useTool(mouseX, mouseY, penColor);
                     break;
                 case PaintModes.FILTER:
                     break;
@@ -179,7 +190,7 @@ namespace Squamster
             return previewPoint;
         }
 
-        private PointF useBrush(int mouseX, int mouseY, ColourValue penColor)
+        private PointF useTool(int mouseX, int mouseY, ColourValue penColor)
         {
             PointF previewPoint = new PointF(-1, -1);
             if (activeTexture >= 0 && customTextures[activeTexture] != null)
@@ -197,21 +208,7 @@ namespace Squamster
                 else if (mouseY > OgreForm.mWindow.Height)
                     mouseY = (int)OgreForm.mWindow.Height;
 
-                Bitmap scaledBrush;
-
-                if (mBrushScale != 1)
-                {
-                    scaledBrush = new Bitmap(brushes[currentBrush], new Size((int)(brushes[currentBrush].Width * mBrushScale), (int)(brushes[currentBrush].Height * mBrushScale)));
-                }
-                else
-                {
-                    scaledBrush = brushes[currentBrush];
-                }
-
-
-                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Scaled Brush Size: " + scaledBrush.Width.ToString() + "," + scaledBrush.Height.ToString());
-
-                Point tl = new Point(mouseX - (scaledBrush.Width / 2), mouseY - (scaledBrush.Height / 2));
+                Point tl = new Point(mouseX - (currentTransformedBrush.Width / 2), mouseY - (currentTransformedBrush.Height / 2));
                 if (tl.X < 0)
                     tl.X = 0;
                 else if (tl.X >= uvEncodedTexture.Width)
@@ -224,7 +221,7 @@ namespace Squamster
 
                 LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Top-left = " + tl.ToString());
 
-                Point br = new Point(tl.X + scaledBrush.Width, tl.Y + scaledBrush.Height);
+                Point br = new Point(tl.X + currentTransformedBrush.Width, tl.Y + currentTransformedBrush.Height);
                 if (br.X >= uvEncodedTexture.Width)
                     br.X = (int)uvEncodedTexture.Width - 1;
                 if (br.Y >= uvEncodedTexture.Height)
@@ -277,46 +274,122 @@ namespace Squamster
                                 previewPoint.X = red;
                                 previewPoint.Y = green;
 
-                                uvX = (red * (customTextures[activeTexture].Width - 1));
-                                uvY = (green * (customTextures[activeTexture].Height - 1));
+                                uvX = red * (float)customTextures[activeTexture].Width - 1;
+                                uvY = green * (float)customTextures[activeTexture].Height - 1;
 
-                                if (!points.Contains(new Point((int)uvX, (int)uvY)))
+                                if (!points.Contains(new Point((int)(uvX + .5), (int)(uvY + .5))))
                                 {
-                                    points.Add(new Point((int)uvX, (int)uvY));
+                                    points.Add(new Point((int)(uvX + .5), (int)(uvY + .5)));
                                     brushPoints.Add(new Point((int)(i - tl.X), (int)(j - tl.Y)));
                                 }
                             }
                         }
                     }
 
-                    for (int i = 0; i < points.Count; i++)
+                    switch (currentTool)
                     {
-                        writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
-
-                        ColourValue baseColor = new ColourValue();
-
-                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
-
-                        ColourValue drawColor = new ColourValue();
-                        drawColor.SetAsARGB((uint)scaledBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
-
-                        float alpha = (1 - drawColor.r) * mBrushOpacity;
-
-                        drawColor.r = alpha * penColor.r + baseColor.r * (1 - alpha);
-                        drawColor.g = alpha * penColor.g + baseColor.g * (1 - alpha);
-                        drawColor.b = alpha * penColor.b + baseColor.b * (1 - alpha);
-
-
-                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                        case Tools.BRUSH:
+                            usePaintBrush(ref penColor, points, brushPoints, ref texEdit, ref writebox);
+                            break;
+                        case Tools.BLUR:
+                            useBlurTool(points, brushPoints, ref texEdit, ref writebox);
+                            break;
+                        default:
+                            LogManager.Singleton.LogMessage("Error - Unknown tool");
+                            break;
                     }
-
-
 
                     meshTexBuffer.Unlock();
                     buffer.Unlock();
                 }
             }
             return previewPoint;
+        }
+
+        unsafe private void usePaintBrush(ref ColourValue penColor, List<Point> points, List<Point> brushPoints, ref PixelBox texEdit, ref Box writebox)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
+
+                ColourValue baseColor = new ColourValue();
+
+                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                ColourValue drawColor = new ColourValue();
+                drawColor.SetAsARGB((uint)currentTransformedBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
+
+                float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+                drawColor.r = alpha * penColor.r + baseColor.r * (1 - alpha);
+                drawColor.g = alpha * penColor.g + baseColor.g * (1 - alpha);
+                drawColor.b = alpha * penColor.b + baseColor.b * (1 - alpha);
+
+
+                PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+            }
+        }
+
+        unsafe private void useBlurTool(List<Point> points, List<Point> brushPoints, ref PixelBox texEdit, ref Box writebox)
+        {
+            List<ColourValue> pixels = new List<ColourValue>();
+            for (int i = 0; i < points.Count; i++)
+            {
+                ColourValue prevColor = new ColourValue();
+                writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
+                PixelUtil.UnpackColour(&prevColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                if (points[i].X > 0 && points[i].X < customTextures[activeTexture].Width - 1 && points[i].Y > 0 && points[i].Y < customTextures[activeTexture].Height - 1)
+                {
+                    ColourValue baseColor = new ColourValue();
+                    Box subCoords;
+                    for (int y = -1; y < 2; y++)
+                    {
+                        for (int x = -1; x < 2; x++)
+                        {
+                            subCoords = new Box((uint)(points[i].X + x), (uint)(points[i].Y + y), (uint)(points[i].X + y), (uint)(points[i].Y + x));
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(subCoords).data.ToPointer());
+                            pixels.Add(baseColor);
+                        }
+                    }
+                    Bitmap bm = new Bitmap(3, 3, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, 3, 3), System.Drawing.Imaging.ImageLockMode.ReadOnly, bm.PixelFormat);
+                    int PixelSize = 4;
+
+                    for (int y = 0; y < bmd.Height; y++)
+                    {
+                        byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
+                        for (int x = 0; x < bmd.Width; x++)
+                        {
+                            Mogre.ColourValue color = pixels[x + y * 3];
+                            row[x * PixelSize] = (byte)(color.b * 255);
+                            row[x * PixelSize + 1] = (byte)(color.g * 255);
+                            row[x * PixelSize + 2] = (byte)(color.r * 255);
+                            row[x * PixelSize + 3] = (byte)(color.a * 255);
+                        }
+                    }
+                    bm.UnlockBits(bmd);
+
+                    ConvMatrix m = new ConvMatrix();
+                    m.SetAll(1);
+                    m.Factor = 9;
+
+                    Conv3x3(bm, m);
+
+                    ColourValue blurColor = new ColourValue();
+                    ColourValue drawColor = new ColourValue();
+                    blurColor.SetAsARGB((uint)bm.GetPixel(1, 1).ToArgb());
+                    drawColor.SetAsARGB((uint)currentTransformedBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
+
+                    float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+                    drawColor.r = alpha * blurColor.r + prevColor.r * (1 - alpha);
+                    drawColor.g = alpha * blurColor.g + prevColor.g * (1 - alpha);
+                    drawColor.b = alpha * blurColor.b + prevColor.b * (1 - alpha);
+                    drawColor.a = 1;
+                    PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                }
+            }
         }
 
         public void setActiveTexture(string texture)
@@ -413,7 +486,7 @@ namespace Squamster
 
         public enum PaintModes
         {
-            BRUSH,
+            TOOLS,
             FILTER
         }
 
