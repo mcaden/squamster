@@ -48,6 +48,8 @@
             this.Btn_Paint = new System.Windows.Forms.Button();
             this.viewPanel = new System.Windows.Forms.Panel();
             this.paintPanel = new System.Windows.Forms.Panel();
+            this.btn_Blur = new System.Windows.Forms.Button();
+            this.btn_Brush = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.brushOpacityControl = new System.Windows.Forms.NumericUpDown();
@@ -74,8 +76,9 @@
             this.gaussianBlurToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sharpenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.btn_Brush = new System.Windows.Forms.Button();
-            this.btn_Blur = new System.Windows.Forms.Button();
+            this.btn_Sharpen = new System.Windows.Forms.Button();
+            this.btn_Dodge = new System.Windows.Forms.Button();
+            this.btn_Burn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.viewPanel.SuspendLayout();
             this.paintPanel.SuspendLayout();
@@ -341,7 +344,7 @@
             this.viewPanel.Location = new System.Drawing.Point(0, 0);
             this.viewPanel.Margin = new System.Windows.Forms.Padding(0);
             this.viewPanel.Name = "viewPanel";
-            this.viewPanel.Size = new System.Drawing.Size(140, 606);
+            this.viewPanel.Size = new System.Drawing.Size(137, 606);
             this.viewPanel.TabIndex = 1;
             // 
             // paintPanel
@@ -349,6 +352,9 @@
             this.paintPanel.BackColor = System.Drawing.Color.Silver;
             this.paintPanel.BackgroundImage = global::Squamster.Properties.Resources.sidebar;
             this.paintPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.paintPanel.Controls.Add(this.btn_Burn);
+            this.paintPanel.Controls.Add(this.btn_Dodge);
+            this.paintPanel.Controls.Add(this.btn_Sharpen);
             this.paintPanel.Controls.Add(this.btn_Blur);
             this.paintPanel.Controls.Add(this.btn_Brush);
             this.paintPanel.Controls.Add(this.label2);
@@ -363,8 +369,42 @@
             this.paintPanel.Location = new System.Drawing.Point(0, 0);
             this.paintPanel.Margin = new System.Windows.Forms.Padding(0);
             this.paintPanel.Name = "paintPanel";
-            this.paintPanel.Size = new System.Drawing.Size(140, 606);
+            this.paintPanel.Size = new System.Drawing.Size(137, 606);
             this.paintPanel.TabIndex = 3;
+            // 
+            // btn_Blur
+            // 
+            this.btn_Blur.BackColor = System.Drawing.Color.Black;
+            this.btn_Blur.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Blur.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Blur.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Blur.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Blur.ForeColor = System.Drawing.Color.White;
+            this.btn_Blur.Location = new System.Drawing.Point(46, 220);
+            this.btn_Blur.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Blur.Name = "btn_Blur";
+            this.btn_Blur.Size = new System.Drawing.Size(88, 24);
+            this.btn_Blur.TabIndex = 18;
+            this.btn_Blur.Text = "Blur";
+            this.btn_Blur.UseVisualStyleBackColor = false;
+            this.btn_Blur.Click += new System.EventHandler(this.btn_Blur_Click);
+            // 
+            // btn_Brush
+            // 
+            this.btn_Brush.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Brush.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Brush.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Brush.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Brush.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Brush.ForeColor = System.Drawing.Color.White;
+            this.btn_Brush.Location = new System.Drawing.Point(46, 194);
+            this.btn_Brush.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Brush.Name = "btn_Brush";
+            this.btn_Brush.Size = new System.Drawing.Size(88, 23);
+            this.btn_Brush.TabIndex = 17;
+            this.btn_Brush.Text = "Brush";
+            this.btn_Brush.UseVisualStyleBackColor = false;
+            this.btn_Brush.Click += new System.EventHandler(this.btn_Brush_Click);
             // 
             // label2
             // 
@@ -661,43 +701,60 @@
             this.splitContainer1.Panel2.Controls.Add(this.paintPanel);
             this.splitContainer1.Panel2.Controls.Add(this.viewPanel);
             this.splitContainer1.Size = new System.Drawing.Size(944, 606);
-            this.splitContainer1.SplitterDistance = 803;
+            this.splitContainer1.SplitterDistance = 806;
             this.splitContainer1.SplitterWidth = 1;
             this.splitContainer1.TabIndex = 4;
             // 
-            // btn_Brush
+            // btn_Sharpen
             // 
-            this.btn_Brush.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btn_Brush.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
-            this.btn_Brush.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
-            this.btn_Brush.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btn_Brush.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btn_Brush.ForeColor = System.Drawing.Color.White;
-            this.btn_Brush.Location = new System.Drawing.Point(46, 194);
-            this.btn_Brush.Margin = new System.Windows.Forms.Padding(0);
-            this.btn_Brush.Name = "btn_Brush";
-            this.btn_Brush.Size = new System.Drawing.Size(88, 23);
-            this.btn_Brush.TabIndex = 17;
-            this.btn_Brush.Text = "Brush";
-            this.btn_Brush.UseVisualStyleBackColor = false;
-            this.btn_Brush.Click += new System.EventHandler(this.btn_Brush_Click);
+            this.btn_Sharpen.BackColor = System.Drawing.Color.Black;
+            this.btn_Sharpen.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Sharpen.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Sharpen.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Sharpen.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Sharpen.ForeColor = System.Drawing.Color.White;
+            this.btn_Sharpen.Location = new System.Drawing.Point(46, 247);
+            this.btn_Sharpen.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Sharpen.Name = "btn_Sharpen";
+            this.btn_Sharpen.Size = new System.Drawing.Size(88, 24);
+            this.btn_Sharpen.TabIndex = 19;
+            this.btn_Sharpen.Text = "Sharpen";
+            this.btn_Sharpen.UseVisualStyleBackColor = false;
+            this.btn_Sharpen.Click += new System.EventHandler(this.btn_Sharpen_Click);
             // 
-            // btn_Blur
+            // btn_Dodge
             // 
-            this.btn_Blur.BackColor = System.Drawing.Color.Black;
-            this.btn_Blur.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
-            this.btn_Blur.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
-            this.btn_Blur.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btn_Blur.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btn_Blur.ForeColor = System.Drawing.Color.White;
-            this.btn_Blur.Location = new System.Drawing.Point(46, 220);
-            this.btn_Blur.Margin = new System.Windows.Forms.Padding(0);
-            this.btn_Blur.Name = "btn_Blur";
-            this.btn_Blur.Size = new System.Drawing.Size(88, 24);
-            this.btn_Blur.TabIndex = 18;
-            this.btn_Blur.Text = "Blur";
-            this.btn_Blur.UseVisualStyleBackColor = false;
-            this.btn_Blur.Click += new System.EventHandler(this.btn_Blur_Click);
+            this.btn_Dodge.BackColor = System.Drawing.Color.Black;
+            this.btn_Dodge.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Dodge.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Dodge.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Dodge.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Dodge.ForeColor = System.Drawing.Color.White;
+            this.btn_Dodge.Location = new System.Drawing.Point(46, 274);
+            this.btn_Dodge.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Dodge.Name = "btn_Dodge";
+            this.btn_Dodge.Size = new System.Drawing.Size(88, 24);
+            this.btn_Dodge.TabIndex = 20;
+            this.btn_Dodge.Text = "Dodge";
+            this.btn_Dodge.UseVisualStyleBackColor = false;
+            this.btn_Dodge.Click += new System.EventHandler(this.btn_Dodge_Click);
+            // 
+            // btn_Burn
+            // 
+            this.btn_Burn.BackColor = System.Drawing.Color.Black;
+            this.btn_Burn.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Burn.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Burn.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Burn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Burn.ForeColor = System.Drawing.Color.White;
+            this.btn_Burn.Location = new System.Drawing.Point(45, 301);
+            this.btn_Burn.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Burn.Name = "btn_Burn";
+            this.btn_Burn.Size = new System.Drawing.Size(88, 24);
+            this.btn_Burn.TabIndex = 21;
+            this.btn_Burn.Text = "Burn";
+            this.btn_Burn.UseVisualStyleBackColor = false;
+            this.btn_Burn.Click += new System.EventHandler(this.btn_Burn_Click);
             // 
             // OgreForm
             // 
@@ -781,6 +838,9 @@
         private System.Windows.Forms.ToolStripMenuItem sharpenToolStripMenuItem;
         private System.Windows.Forms.Button btn_Blur;
         private System.Windows.Forms.Button btn_Brush;
+        private System.Windows.Forms.Button btn_Sharpen;
+        private System.Windows.Forms.Button btn_Burn;
+        private System.Windows.Forms.Button btn_Dodge;
 
     }
 }

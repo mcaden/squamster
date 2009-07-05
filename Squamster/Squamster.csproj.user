@@ -23,4 +23,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Release\</StartWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Install|x86' ">
+    <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Release\</StartWorkingDirectory>
+  </PropertyGroup>
 </Project>

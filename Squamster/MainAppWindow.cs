@@ -33,7 +33,12 @@ namespace Squamster
 {
     public partial class OgreForm : Form
     {
+
+#if INSTALL
+        const string brushPath = "./media/brushes/";
+#else
         const string brushPath = "../../media/brushes/";
+#endif
 
         public static Root mRoot = null;
         public static SceneManager mSceneMgr = null;
@@ -1017,18 +1022,51 @@ namespace Squamster
 
         private void btn_Brush_Click(object sender, EventArgs e)
         {
-            btn_Brush.BackColor = Color.FromArgb(64, 0, 0);
-            btn_Blur.BackColor = Color.Black;
+            deactivateTools();
             meshPainter.currentTool = Painter.Tools.BRUSH;
             meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            btn_Brush.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void btn_Blur_Click(object sender, EventArgs e)
         {
+            deactivateTools();
             meshPainter.currentTool = Painter.Tools.BLUR;
             meshPainter.paintMode = Painter.PaintModes.TOOLS;
             btn_Blur.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void btn_Sharpen_Click(object sender, EventArgs e)
+        {
+            deactivateTools();
+            meshPainter.currentTool = Painter.Tools.SHARPEN;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            btn_Sharpen.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void btn_Burn_Click(object sender, EventArgs e)
+        {
+            deactivateTools();
+            meshPainter.currentTool = Painter.Tools.BURN;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            btn_Burn.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void btn_Dodge_Click(object sender, EventArgs e)
+        {
+            deactivateTools();
+            meshPainter.currentTool = Painter.Tools.DODGE;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            btn_Dodge.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void deactivateTools()
+        {
+            btn_Blur.BackColor = Color.Black;
             btn_Brush.BackColor = Color.Black;
+            btn_Sharpen.BackColor = Color.Black;
+            btn_Burn.BackColor = Color.Black;
+            btn_Dodge.BackColor = Color.Black;
         }
     }
 }

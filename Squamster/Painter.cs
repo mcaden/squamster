@@ -51,7 +51,9 @@ namespace Squamster
         { 
             BRUSH,
             BLUR,
-            SHARPEN
+            SHARPEN,
+            DODGE,
+            BURN
         }
 
         public static ColourValue penColor = new ColourValue(1, 0, 0, 1);
@@ -289,10 +291,30 @@ namespace Squamster
                     switch (currentTool)
                     {
                         case Tools.BRUSH:
-                            usePaintBrush(ref penColor, points, brushPoints, ref texEdit, ref writebox);
+                            usePaintBrush(penColor, points, brushPoints, texEdit, writebox);
                             break;
                         case Tools.BLUR:
-                            useBlurTool(points, brushPoints, ref texEdit, ref writebox);
+                            ConvMatrix blurMatrix = new ConvMatrix();
+                            blurMatrix.SetAll(1);
+                            blurMatrix.Factor = 9;
+                            useConvolutionTool(points, brushPoints, ref texEdit, ref writebox, blurMatrix);
+                            break;
+                        case Tools.SHARPEN:
+                            ConvMatrix sharpenMatrix = new ConvMatrix();
+                            sharpenMatrix.SetAll(0);
+                            sharpenMatrix.MidLeft = -2;
+                            sharpenMatrix.MidRight = -2;
+                            sharpenMatrix.TopMid = -2;
+                            sharpenMatrix.BottomMid = -2;
+                            sharpenMatrix.Pixel = 11;
+                            sharpenMatrix.Factor = 3;
+                            useConvolutionTool(points, brushPoints, ref texEdit, ref writebox, sharpenMatrix);
+                            break;
+                        case Tools.DODGE:
+                            useDodgeTool(penColor, points, brushPoints, texEdit, writebox);
+                            break;
+                        case Tools.BURN:
+                            useBurnTool(penColor, points, brushPoints, texEdit, writebox);
                             break;
                         default:
                             LogManager.Singleton.LogMessage("Error - Unknown tool");
@@ -306,7 +328,59 @@ namespace Squamster
             return previewPoint;
         }
 
-        unsafe private void usePaintBrush(ref ColourValue penColor, List<Point> points, List<Point> brushPoints, ref PixelBox texEdit, ref Box writebox)
+        unsafe private void useDodgeTool(ColourValue penColor, List<Point> points, List<Point> brushPoints, PixelBox texEdit, Box writebox)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
+
+                ColourValue baseColor = new ColourValue();
+
+                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                ColourValue drawColor = new ColourValue();
+                drawColor.SetAsARGB((uint)currentTransformedBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
+
+                float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+
+                //component + 0.25 * sin(component * PI)
+                drawColor.r = alpha * (baseColor.r + 0.25f * (float)System.Math.Sin(baseColor.r * System.Math.PI)) + baseColor.r * (1 - alpha);
+                drawColor.g = alpha * (baseColor.g + 0.25f * (float)System.Math.Sin(baseColor.g * System.Math.PI)) + baseColor.g * (1 - alpha);
+                drawColor.b = alpha * (baseColor.b + 0.25f * (float)System.Math.Sin(baseColor.b * System.Math.PI)) + baseColor.b * (1 - alpha);
+
+
+                PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+            }
+        }
+
+        unsafe private void useBurnTool(ColourValue penColor, List<Point> points, List<Point> brushPoints, PixelBox texEdit, Box writebox)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
+
+                ColourValue baseColor = new ColourValue();
+
+                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                ColourValue drawColor = new ColourValue();
+                drawColor.SetAsARGB((uint)currentTransformedBrush.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
+
+                float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+
+                //0.25 * component
+                drawColor.r = alpha * (baseColor.r * .25f) + baseColor.r * (1 - alpha);
+                drawColor.g = alpha * (baseColor.g * .25f) + baseColor.g * (1 - alpha);
+                drawColor.b = alpha * (baseColor.b * .25f) + baseColor.b * (1 - alpha);
+
+
+                PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+            }
+        }
+
+        unsafe private void usePaintBrush(ColourValue penColor, List<Point> points, List<Point> brushPoints, PixelBox texEdit, Box writebox)
         {
             for (int i = 0; i < points.Count; i++)
             {
@@ -330,11 +404,11 @@ namespace Squamster
             }
         }
 
-        unsafe private void useBlurTool(List<Point> points, List<Point> brushPoints, ref PixelBox texEdit, ref Box writebox)
+        unsafe private void useConvolutionTool(List<Point> points, List<Point> brushPoints, ref PixelBox texEdit, ref Box writebox, ConvMatrix toolMatrix)
         {
-            List<ColourValue> pixels = new List<ColourValue>();
             for (int i = 0; i < points.Count; i++)
             {
+                List<ColourValue> pixels = new List<ColourValue>();
                 ColourValue prevColor = new ColourValue();
                 writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X, (uint)points[i].Y);
                 PixelUtil.UnpackColour(&prevColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
@@ -346,13 +420,13 @@ namespace Squamster
                     {
                         for (int x = -1; x < 2; x++)
                         {
-                            subCoords = new Box((uint)(points[i].X + x), (uint)(points[i].Y + y), (uint)(points[i].X + y), (uint)(points[i].Y + x));
+                            subCoords = new Box((uint)(points[i].X + x), (uint)(points[i].Y + y), (uint)(points[i].X + x), (uint)(points[i].Y + y));
                             PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(subCoords).data.ToPointer());
                             pixels.Add(baseColor);
                         }
                     }
                     Bitmap bm = new Bitmap(3, 3, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, 3, 3), System.Drawing.Imaging.ImageLockMode.ReadOnly, bm.PixelFormat);
+                    System.Drawing.Imaging.BitmapData bmd = bm.LockBits(new System.Drawing.Rectangle(0, 0, 3, 3), System.Drawing.Imaging.ImageLockMode.WriteOnly, bm.PixelFormat);
                     int PixelSize = 4;
 
                     for (int y = 0; y < bmd.Height; y++)
@@ -360,7 +434,7 @@ namespace Squamster
                         byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
                         for (int x = 0; x < bmd.Width; x++)
                         {
-                            Mogre.ColourValue color = pixels[x + y * 3];
+                            Mogre.ColourValue color = pixels[x + (y * 3)];
                             row[x * PixelSize] = (byte)(color.b * 255);
                             row[x * PixelSize + 1] = (byte)(color.g * 255);
                             row[x * PixelSize + 2] = (byte)(color.r * 255);
@@ -369,11 +443,7 @@ namespace Squamster
                     }
                     bm.UnlockBits(bmd);
 
-                    ConvMatrix m = new ConvMatrix();
-                    m.SetAll(1);
-                    m.Factor = 9;
-
-                    Conv3x3(bm, m);
+                    Conv3x3(bm, toolMatrix);
 
                     ColourValue blurColor = new ColourValue();
                     ColourValue drawColor = new ColourValue();
