@@ -21,9 +21,6 @@ This file is part of Squamster - An Ogre /mesh viewer/painter for windows.
 **************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using Mogre;
 
@@ -110,10 +107,10 @@ namespace Squamster
                         meshNode.SetVisible(false);
                         isMeshAdded = true;
                     }
-                    catch
+                    catch( Exception exc )
                     {
                         MessageBox.Show("Mesh loading failed while attempting to load mesh: " + meshName);
-                        LogManager.Singleton.LogMessage("[EXCEPTION]MeshLoader failed while attempting to load mesh: " + meshName);
+                        LogManager.Singleton.LogMessage("[EXCEPTION]MeshLoader failed while attempting to load mesh: " + meshName + " - " + exc.ToString());
                         isMeshAdded = false;
                     }
                 }
