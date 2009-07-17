@@ -17,7 +17,7 @@
     </ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Release</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\mogre16\Squamster\Bin\Debug</StartWorkingDirectory>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">

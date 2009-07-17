@@ -21,9 +21,6 @@ This file is part of Squamster - An Ogre /mesh viewer/painter for windows.
 **************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Windows.Forms;
-using Mogre;
 
 
 namespace Squamster

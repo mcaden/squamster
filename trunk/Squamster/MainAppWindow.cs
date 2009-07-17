@@ -20,14 +20,11 @@ This file is part of Squamster - An Ogre /mesh viewer/painter for windows.
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Runtime.InteropServices;
-using MOIS;
+using System.Windows.Forms;
 using Mogre;
+using MOIS;
 
 namespace Squamster
 {
@@ -91,9 +88,16 @@ namespace Squamster
             Show();
             while (mRoot != null && !mShutdownRequested)
             {
-                System.Threading.Thread.Sleep(0);
-                this.update();
-                Application.DoEvents();
+                try
+                {
+                    System.Threading.Thread.Sleep(0);
+                    this.update();
+                    Application.DoEvents();
+                }
+                catch (Exception e)
+                {
+                    LogManager.Singleton.LogMessage( "!!! EXCEPTION !!!" + e.ToString());
+                }
             }
         }
 
@@ -271,6 +275,8 @@ namespace Squamster
                 }
             }
 
+
+
             // Capture all key presses since last check.
             inputKeyboard.Capture();
             // Capture all mouse movements and button presses since last check.
@@ -313,6 +319,16 @@ namespace Squamster
                     {
                         actionPerformed = false;
                     }
+                }
+            }
+
+            if (busy)
+            {
+                if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
+                {
+                    Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
+                    Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
+                    drawShapePreview(meshPainter.shapeOrigin, pos);
                 }
             }
 
@@ -729,14 +745,29 @@ namespace Squamster
                 }
                 else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Left)
                 {
-                    if (!busy)
+                    if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool != Painter.Tools.SHAPE)
                     {
-                        busy = true;
-                        addToUndo();
+                        if (!busy)
+                        {
+                            busy = true;
+                            addToUndo();
+                        }
+                        Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
+                        Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
+                        drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
                     }
-                    Point mousePos  = PointToClient(System.Windows.Forms.Control.MousePosition);
-                    Point pos = new Point( mousePos.X, mousePos.Y - menuStrip1.Height);
-                    drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
+                    else if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
+                    {
+                        Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
+                        Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
+                        if (!busy)
+                        {
+                            meshPainter.shapeOrigin = pos;
+                            busy = true;
+                            addToUndo();
+                        }
+                        drawShapePreview(meshPainter.shapeOrigin, pos);
+                    }
                 }
                 else if (e.state.Z.rel != 0)
                 {
@@ -752,6 +783,12 @@ namespace Squamster
                     {
                         busy = false;
                         updateTexturePreview();
+                        if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
+                        {
+                            Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
+                            Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
+                            meshPainter.drawShape(meshPainter.shapeOrigin, pos);
+                        }
                     }
                 }
             }
@@ -804,6 +841,7 @@ namespace Squamster
 
             meshPainter.saveCurrentTextureAs(path);
         }
+
         private void drawPreview(PointF drawPoint)
         {
             if (drawPoint.X >= 0 && drawPoint.Y >= 0)
@@ -828,6 +866,7 @@ namespace Squamster
                 }
             }
         }
+
         private void selectTexture(object sender, EventArgs e)
         {
             undoList.Clear();
@@ -870,6 +909,32 @@ namespace Squamster
                     meshPainter.currentBrush = i;
                 }
             }
+        }
+
+        private void drawShapePreview(Point origin, Point mouse)
+        {
+            int panelWidth = splitContainer1.Panel1.Width;
+            int panelHeight = splitContainer1.Panel1.Height;
+
+            if( pointIsWithinPanel( origin, panelWidth, panelHeight ) && pointIsWithinPanel( mouse, panelWidth, panelHeight ) )
+            {
+                System.Drawing.Graphics objGraphic = splitContainer1.Panel1.CreateGraphics();
+
+
+                System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
+
+                objGraphic.DrawLine(pen, origin.X, origin.Y, mouse.X, mouse.Y);
+            }
+        }
+
+        private bool pointIsWithinPanel(Point point, int width, int height)
+        {
+            bool isWithin = false;
+            if (point.X >= 0 && point.Y >= 0 && point.X < width && point.Y < height)
+            {
+                isWithin = true;
+            }
+            return isWithin;
         }
 #endregion
 
@@ -1067,6 +1132,16 @@ namespace Squamster
             btn_Sharpen.BackColor = Color.Black;
             btn_Burn.BackColor = Color.Black;
             btn_Dodge.BackColor = Color.Black;
+            btn_Shape.BackColor = Color.Black;
+        }
+
+        private void btn_Shape_Click(object sender, EventArgs e)
+        {
+            deactivateTools();
+            meshPainter.currentTool = Painter.Tools.SHAPE;
+            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.currentShape = Painter.Shapes.LINE;
+            btn_Shape.BackColor = Color.FromArgb(64, 0, 0);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -80,14 +80,24 @@
     <DefineConstants>INSTALL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mogre, Version=1.6.2.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mogre, Version=1.6.2.0, Culture=neutral, processorArchitecture=x86" Condition="'$(Configuration)'=='Release'">
+      <Private>True</Private>
       <HintPath>..\Bin\Release\Mogre.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="MOIS, Version=1.1.0.0, Culture=neutral, processorArchitecture=x86">
+    <Reference Include="Mogre_d, Version=1.6.2.0, Culture=neutral, processorArchitecture=x86" Condition="'$(Configuration)'=='Debug'">
+      <Private>True</Private>
+      <HintPath>..\Bin\Debug\Mogre_d.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MOIS, Version=1.1.0.0, Culture=neutral, processorArchitecture=x86" Condition="'$(Configuration)'=='Release'">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Bin\Release\MOIS.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MOIS, Version=1.1.0.0, Culture=neutral, processorArchitecture=x86" Condition="'$(Configuration)'=='Debug'">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Bin\Debug\MOIS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
