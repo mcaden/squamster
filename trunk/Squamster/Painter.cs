@@ -42,10 +42,10 @@ namespace Squamster
         public int activeTexture = -1;
         public TexturePtr uvEncodedTexture;
         StringVector materials = new StringVector();
-        public PaintModes paintMode = PaintModes.TOOLS;
-        public Tools currentTool = Tools.BRUSH;
-        public Shapes currentShape = Shapes.LINE;
-        public Point shapeOrigin { get; set; }
+        public PaintModes PaintMode { get; set;}
+        public Tools CurrentTool { get; set;}
+        public Shapes CurrentShape { get; set;}
+        public Point ShapeOrigin { get; set; }
 
         public enum Tools
         { 
@@ -64,17 +64,22 @@ namespace Squamster
             SQUARE
         }
 
-        public static ColourValue penColor = new ColourValue(1, 0, 0, 1);
+        public static ColourValue PenColor { get; set; }
+        public static ColourValue FillColor { get; set; }
+        public bool FillShape { get; set; }
 
         public Painter()
         {
+            PaintMode = PaintModes.TOOLS;
+            CurrentShape = Shapes.LINE;
+            CurrentTool = Tools.BRUSH;
             uvEncodedTexture = TextureManager.Singleton.CreateManual("RttTex",
                 ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, TextureType.TEX_TYPE_2D,
                 OgreForm.mWindow.Width, OgreForm.mWindow.Height, 0, PixelFormat.PF_FLOAT16_RGBA, (int)TextureUsage.TU_RENDERTARGET);
 
 
-
-
+            FillColor = new ColourValue(0, 0, 0, 1);
+            PenColor = new ColourValue(1, 0, 0, 1);
             RenderTexture renderTexture = uvEncodedTexture.GetBuffer().GetRenderTarget();
             renderTexture.AddViewport(OgreForm.ExCamera.getOgreCamera);
             renderTexture.GetViewport(0).SetClearEveryFrame(true);
@@ -188,7 +193,7 @@ namespace Squamster
         public PointF draw(int mouseX, int mouseY, ColourValue penColor)
         {
             PointF previewPoint = new PointF(-1, -1);
-            switch (paintMode)
+            switch (PaintMode)
             { 
                 case PaintModes.TOOLS:
                     useTool(mouseX, mouseY, penColor);
@@ -296,7 +301,7 @@ namespace Squamster
                         }
                     }
 
-                    switch (currentTool)
+                    switch (CurrentTool)
                     {
                         case Tools.BRUSH:
                             usePaintBrush(penColor, points, brushPoints, texEdit, writebox);
@@ -1051,138 +1056,214 @@ namespace Squamster
             return customTextures[activeTexture].Name;
         }
 
+        public bool pointIsWithinRTT( Point pointToCheck )
+        {
+            bool isWithin = false;
+
+            if (pointToCheck.X >= 0 && pointToCheck.X < uvEncodedTexture.Width
+                && pointToCheck.Y >= 0 && pointToCheck.Y < uvEncodedTexture.Height )
+            {
+                isWithin = true;
+            }
+
+            return isWithin;
+        }
+
         internal void drawShape(Point origin, Point end)
         {
-            Bitmap shape;
-
-            if (activeTexture >= 0 && customTextures[activeTexture] != null)
+            if (pointIsWithinRTT(origin) && pointIsWithinRTT(end))
             {
-                float uvX = 0;
-                float uvY = 0;
+                Bitmap shape;
+                Bitmap fillShape;
 
-                int leftX = 0;
-                int rightX = 0;
-                int topY = 0;
-                int bottomY = 0;
-
-                leftX = System.Math.Min( origin.X, end.X );
-                rightX = System.Math.Max( origin.X, end.X );
-                topY = System.Math.Min( origin.Y, end.Y );
-                bottomY = System.Math.Max( origin.Y, end.Y );
-
-                Point topLeft = new Point( leftX, topY);
-                Point bottomRight = new Point( rightX, bottomY );
-
-                shape = new Bitmap((rightX - leftX + 1), (bottomY - topY + 1), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Graphics gBmp = Graphics.FromImage( shape );
-                gBmp.FillRectangle( new SolidBrush( Color.White ),0, 0, shape.Width, shape.Height);
-                gBmp.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                Pen shapePen = new Pen(Color.Black);
-
-                int lineOriginX = origin.X - leftX;
-                int lineEndX = end.X - leftX;
-                int lineOriginY = origin.Y - topY;
-                int lineEndY = end.Y - topY;
-
-                switch (currentShape)
+                if (activeTexture >= 0 && customTextures[activeTexture] != null)
                 {
-                    case Shapes.LINE:
-                        gBmp.DrawLine(shapePen, lineOriginX, lineOriginY, lineEndX, lineEndY);
-                        break;
-                    case Shapes.CIRCLE:
-                        gBmp.DrawEllipse(shapePen, leftX, topY, shape.Width, shape.Height);
-                        break;
-                    case Shapes.SQUARE:
-                        gBmp.DrawRectangle(shapePen, leftX, topY, shape.Width, shape.Height);
-                        break;
-                    default:
-                        LogManager.Singleton.LogMessage("Error - Drawing illegal shape");
-                        return;
-                }
+                    int leftX = 0;
+                    int rightX = 0;
+                    int topY = 0;
+                    int bottomY = 0;
 
-                gBmp.Dispose();
+                    leftX = System.Math.Min(origin.X, end.X);
+                    rightX = System.Math.Max(origin.X, end.X);
+                    topY = System.Math.Min(origin.Y, end.Y);
+                    bottomY = System.Math.Max(origin.Y, end.Y);
 
-                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Top-left = " + topLeft.ToString());
-                LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Bottom-Right = " + bottomRight.ToString());
+                    Point topLeft = new Point(leftX, topY);
+                    Point bottomRight = new Point(rightX, bottomY);
 
-                List<Point> points = new List<Point>();
-                List<Point> brushPoints = new List<Point>();
-                unsafe
-                {
-                    HardwarePixelBufferSharedPtr buffer = uvEncodedTexture.GetBuffer();
-                    buffer.Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
-                    ColourValue uvColorValue = new ColourValue();
-                    PixelBox pbox = buffer.CurrentLock;
+                    shape = new Bitmap((rightX - leftX + 1), (bottomY - topY + 1), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    
 
-                    HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
-                    meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
-                    PixelBox texEdit = meshTexBuffer.CurrentLock;
+                    Graphics shapeGraphic = Graphics.FromImage(shape);
+                    shapeGraphic.FillRectangle(new SolidBrush(Color.White), 0, 0, shape.Width, shape.Height);
+                    shapeGraphic.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+                    Pen shapePen = new Pen(Color.Black);
+                    Brush fillBrush = new SolidBrush(Color.Black);
 
-                    Box writebox = new Box((uint)topLeft.X, (uint)topLeft.Y, (uint)bottomRight.X, (uint)bottomRight.Y);
 
-                    for (uint i = (uint)topLeft.X; i < bottomRight.X; i++)
+                    shapePen.Width = mBrushScale;
+                    
+
+                    int lineOriginX = origin.X - leftX;
+                    int lineEndX = end.X - leftX;
+                    int lineOriginY = origin.Y - topY;
+                    int lineEndY = end.Y - topY;
+
+                    fillShape = new Bitmap(shape);
+                    Graphics fillGraphic = Graphics.FromImage(fillShape);
+                    fillGraphic.FillRectangle(new SolidBrush(Color.White), 0, 0, fillShape.Width, fillShape.Height);
+
+                    switch (CurrentShape)
                     {
-                        for (uint j = (uint)topLeft.Y; j < bottomRight.Y; j++)
+                        case Shapes.LINE:
+                            shapeGraphic.DrawLine(shapePen, lineOriginX, lineOriginY, lineEndX, lineEndY);
+                            break;
+                        case Shapes.CIRCLE:
+                            shapeGraphic.DrawEllipse(shapePen, 0, 0, shape.Width - 2, shape.Height - 2);
+                            fillGraphic.FillEllipse(fillBrush, 0, 0, shape.Width - 2, shape.Height - 2);
+                            break;
+                        case Shapes.SQUARE:
+                            shapeGraphic.DrawRectangle(shapePen, 0, 0, shape.Width - 2, shape.Height - 2);
+                            fillGraphic.FillRectangle(fillBrush, 0, 0, shape.Width - 2, shape.Height - 2);
+                            break;
+                        default:
+                            LogManager.Singleton.LogMessage("Error - Drawing illegal shape");
+                            return;
+                    }
+                    fillBrush.Dispose();
+                    shapePen.Dispose();
+                    fillGraphic.Dispose();
+                    shapeGraphic.Dispose();
+
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Top-left = " + topLeft.ToString());
+                    LogManager.Singleton.LogMessage(LogMessageLevel.LML_TRIVIAL, "Bottom-Right = " + bottomRight.ToString());
+
+                    Dictionary<Point, ColourValue> brushPoints = new Dictionary<Point, ColourValue>();
+                    Dictionary<Point, ColourValue> fillPoints = new Dictionary<Point, ColourValue>();
+                    unsafe
+                    {
+                        HardwarePixelBufferSharedPtr buffer = uvEncodedTexture.GetBuffer();
+                        buffer.Lock(HardwareBuffer.LockOptions.HBL_READ_ONLY);
+                        ColourValue uvColorValue = new ColourValue();
+                        PixelBox pbox = buffer.CurrentLock;
+
+                        HardwarePixelBufferSharedPtr meshTexBuffer = customTextures[activeTexture].GetBuffer();
+                        meshTexBuffer.Lock(HardwareBuffer.LockOptions.HBL_NORMAL);
+                        PixelBox texEdit = meshTexBuffer.CurrentLock;
+
+                        Box writebox = new Box((uint)topLeft.X, (uint)topLeft.Y, (uint)bottomRight.X, (uint)bottomRight.Y);
+
+                        for (uint i = (uint)topLeft.X; i <= bottomRight.X; i++)
                         {
-                            writebox = new Box(i, j, i, j);
-                            PixelUtil.UnpackColour(&uvColorValue, uvEncodedTexture.Format, pbox.GetSubVolume(writebox).data.ToPointer());
-
-                            if (!(uvColorValue.b > 0))
+                            for (uint j = (uint)topLeft.Y; j <= bottomRight.Y; j++)
                             {
-                                float red = uvColorValue.r;
-                                float green = uvColorValue.g;
+                                writebox = new Box(i, j, i, j);
+                                PixelUtil.UnpackColour(&uvColorValue, uvEncodedTexture.Format, pbox.GetSubVolume(writebox).data.ToPointer());
 
-                                red = red % 1;
-                                if (red < 0)
+                                if (!(uvColorValue.b > 0))
                                 {
-                                    red = red + 1;
-                                }
-                                green = green % 1;
-                                if (green < 0)
-                                {
-                                    green = green + 1;
-                                }
+                                    float red = uvColorValue.r;
+                                    float green = uvColorValue.g;
 
-                                uvX = red * (float)customTextures[activeTexture].Width - 1;
-                                uvY = green * (float)customTextures[activeTexture].Height - 1;
+                                    red = red % 1;
+                                    if (red < 0)
+                                    {
+                                        red = red + 1;
+                                    }
+                                    green = green % 1;
+                                    if (green < 0)
+                                    {
+                                        green = green + 1;
+                                    }
 
-                                Point uvCoord = new Point((int)(uvX + .5), (int)(uvY + .5));
+                                    Point uvCoord = new Point((int)(red * (float)customTextures[activeTexture].Width - .5), (int)(green * (float)customTextures[activeTexture].Height - .5));
+                                    Point brushCoord = new Point((int)(i - topLeft.X), (int)(j - topLeft.Y));
 
+                                    ColourValue drawColor = new ColourValue();
+                                    drawColor.SetAsARGB((uint)shape.GetPixel(brushCoord.X, brushCoord.Y).ToArgb());
+                                    if (brushPoints.ContainsKey(uvCoord))
+                                    {
+                                        ColourValue compoundColor = new ColourValue();
+                                        compoundColor.r = System.Math.Min(System.Math.Min(brushPoints[uvCoord].r, drawColor.r) + System.Math.Max(brushPoints[uvCoord].r, drawColor.r) * .01f, 1);
+                                        compoundColor.g = System.Math.Min(System.Math.Min(brushPoints[uvCoord].g, drawColor.g) + System.Math.Max(brushPoints[uvCoord].g, drawColor.g) * .01f, 1);
+                                        compoundColor.b = System.Math.Min(System.Math.Min(brushPoints[uvCoord].b, drawColor.b) + System.Math.Max(brushPoints[uvCoord].b, drawColor.b) * .01f, 1);
 
-                                if (!points.Contains(uvCoord))
-                                {
-                                    points.Add(uvCoord);
-                                    brushPoints.Add(new Point((int)(i - topLeft.X), (int)(j - topLeft.Y)));
+                                        brushPoints[uvCoord] = compoundColor;
+                                    }
+                                    else
+                                    {
+                                        brushPoints.Add(new Point(uvCoord.X, uvCoord.Y), drawColor);
+                                    }
+
+                                    if (FillShape && CurrentShape != Shapes.LINE)
+                                    {
+                                        ColourValue fill = new ColourValue();
+                                        fill.SetAsARGB((uint)fillShape.GetPixel(brushCoord.X, brushCoord.Y).ToArgb());
+                                        if (fillPoints.ContainsKey(uvCoord))
+                                        {
+                                            ColourValue compoundColor = new ColourValue();
+                                            compoundColor.r = System.Math.Min(System.Math.Min(fillPoints[uvCoord].r, fill.r) + System.Math.Max(fillPoints[uvCoord].r, fill.r) * .01f, 1);
+                                            compoundColor.g = System.Math.Min(System.Math.Min(fillPoints[uvCoord].g, fill.g) + System.Math.Max(fillPoints[uvCoord].g, fill.g) * .01f, 1);
+                                            compoundColor.b = System.Math.Min(System.Math.Min(fillPoints[uvCoord].b, fill.b) + System.Math.Max(fillPoints[uvCoord].b, fill.b) * .01f, 1);
+
+                                            fillPoints[uvCoord] = compoundColor;
+                                        }
+                                        else
+                                        {
+                                            fillPoints.Add(new Point(uvCoord.X, uvCoord.Y), fill);
+                                        }
+                                    }
                                 }
                             }
                         }
+
+                        if (FillShape && CurrentShape != Shapes.LINE )
+                        {
+                            foreach (KeyValuePair<Point, ColourValue> brushColor in fillPoints)
+                            {
+                                writebox = new Box((uint)brushColor.Key.X, (uint)brushColor.Key.Y, (uint)brushColor.Key.X + 1, (uint)brushColor.Key.Y + 1);
+
+                                ColourValue baseColor = new ColourValue();
+                                PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                                ColourValue drawColor = brushColor.Value;
+
+                                float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+                                drawColor.r = alpha * FillColor.r + baseColor.r * (1 - alpha);
+                                drawColor.g = alpha * FillColor.g + baseColor.g * (1 - alpha);
+                                drawColor.b = alpha * FillColor.b + baseColor.b * (1 - alpha);
+
+
+                                PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                            }
+                        }
+
+
+
+                        foreach (KeyValuePair<Point, ColourValue> brushColor in brushPoints)
+                        {
+                            writebox = new Box((uint)brushColor.Key.X, (uint)brushColor.Key.Y, (uint)brushColor.Key.X + 1, (uint)brushColor.Key.Y + 1);
+
+                            ColourValue baseColor = new ColourValue();
+                            PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+
+                            ColourValue drawColor = brushColor.Value;
+
+                            float alpha = (1 - drawColor.r) * mBrushOpacity;
+
+                            drawColor.r = alpha * PenColor.r + baseColor.r * (1 - alpha);
+                            drawColor.g = alpha * PenColor.g + baseColor.g * (1 - alpha);
+                            drawColor.b = alpha * PenColor.b + baseColor.b * (1 - alpha);
+
+
+                            PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
+                        }
+                        meshTexBuffer.Unlock();
+                        buffer.Unlock();
+                        shape.Dispose();
+                        fillShape.Dispose();
                     }
-
-
-                    for (int i = 0; i < points.Count; i++)
-                    {
-                        writebox = new Box((uint)points[i].X, (uint)points[i].Y, (uint)points[i].X + 1, (uint)points[i].Y + 1);
-
-                        ColourValue baseColor = new ColourValue();
-
-                        PixelUtil.UnpackColour(&baseColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
-
-                        ColourValue drawColor = new ColourValue();
-                        drawColor.SetAsARGB((uint)shape.GetPixel((int)(brushPoints[i].X), (int)(brushPoints[i].Y)).ToArgb());
-
-                        float alpha = (1 - drawColor.r) * mBrushOpacity;
-
-                        drawColor.r = alpha * penColor.r + baseColor.r * (1 - alpha);
-                        drawColor.g = alpha * penColor.g + baseColor.g * (1 - alpha);
-                        drawColor.b = alpha * penColor.b + baseColor.b * (1 - alpha);
-
-
-                        PixelUtil.PackColour(drawColor, customTextures[activeTexture].Format, texEdit.GetSubVolume(writebox).data.ToPointer());
-                    }
-                    shape.Save("test.png");
-                    meshTexBuffer.Unlock();
-                    buffer.Unlock();
-                    shape.Dispose();
                 }
             }
         }

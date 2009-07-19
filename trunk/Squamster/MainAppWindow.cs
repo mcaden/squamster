@@ -58,6 +58,8 @@ namespace Squamster
         bool mouseInPanel1 = false;
         bool actionPerformed = false;
 
+        public bool DisableDraw { get; set; }
+
         List<byte[]> undoList = new List<byte[]>();
         List<byte[]> redoList = new List<byte[]>();
 
@@ -103,7 +105,7 @@ namespace Squamster
 
         public void Init()
         {
-            
+            DisableDraw = true;
             // Create root object
             mRoot = new Root();
             // Define Resources
@@ -198,7 +200,7 @@ namespace Squamster
             }
 
             meshPainter = new Painter();
-            colorDialog1.Color = Color.FromArgb((int)Painter.penColor.GetAsARGB());
+            colorDialog1.Color = Color.FromArgb((int)Painter.PenColor.GetAsARGB());
             colorSelector.BackColor = colorDialog1.Color;
 
             System.IO.DirectoryInfo brushDir = new System.IO.DirectoryInfo(brushPath);
@@ -220,8 +222,10 @@ namespace Squamster
 
             meshPainter.BrushScale = (float)brushScaleControl.Value;
             meshPainter.BrushOpacity = (float)brushOpacityControl.Value;
-
-            frameTimer.Reset();            
+            chk_Shapes_Fill.Checked = meshPainter.FillShape;
+            frameTimer.Reset();
+            btn_Brush_Click(null, null);
+            DisableDraw = false;
         }
 
         /// <summary>
@@ -322,13 +326,13 @@ namespace Squamster
                 }
             }
 
-            if (busy)
+            if (busy && !DisableDraw)
             {
-                if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
+                if (meshPainter.PaintMode == Painter.PaintModes.TOOLS && meshPainter.CurrentTool == Painter.Tools.SHAPE)
                 {
                     Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
                     Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
-                    drawShapePreview(meshPainter.shapeOrigin, pos);
+                    drawShapePreview(meshPainter.ShapeOrigin, pos);
                 }
             }
 
@@ -729,7 +733,7 @@ namespace Squamster
         public bool MouseMotion(MOIS.MouseEvent e)
         {
             // you can use e.state.Y.rel for reltive position, and e.state.Y.abs for absolute
-            if (mouseInPanel1)
+            if (mouseInPanel1 && !DisableDraw)
             {
                 if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Right)
                 {
@@ -745,7 +749,7 @@ namespace Squamster
                 }
                 else if (System.Windows.Forms.Control.MouseButtons == MouseButtons.Left)
                 {
-                    if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool != Painter.Tools.SHAPE)
+                    if (meshPainter.PaintMode == Painter.PaintModes.TOOLS && meshPainter.CurrentTool != Painter.Tools.SHAPE)
                     {
                         if (!busy)
                         {
@@ -754,19 +758,18 @@ namespace Squamster
                         }
                         Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
                         Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
-                        drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.penColor));
+                        drawPreview(meshPainter.draw(pos.X, pos.Y, Painter.PenColor));
                     }
-                    else if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
+                    else if (meshPainter.PaintMode == Painter.PaintModes.TOOLS && meshPainter.CurrentTool == Painter.Tools.SHAPE)
                     {
                         Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
                         Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
                         if (!busy)
                         {
-                            meshPainter.shapeOrigin = pos;
+                            meshPainter.ShapeOrigin = pos;
                             busy = true;
                             addToUndo();
                         }
-                        drawShapePreview(meshPainter.shapeOrigin, pos);
                     }
                 }
                 else if (e.state.Z.rel != 0)
@@ -782,13 +785,6 @@ namespace Squamster
                     if (busy)
                     {
                         busy = false;
-                        updateTexturePreview();
-                        if (meshPainter.paintMode == Painter.PaintModes.TOOLS && meshPainter.currentTool == Painter.Tools.SHAPE)
-                        {
-                            Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
-                            Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
-                            meshPainter.drawShape(meshPainter.shapeOrigin, pos);
-                        }
                     }
                 }
             }
@@ -805,6 +801,15 @@ namespace Squamster
         }
         public bool MouseReleased(MOIS.MouseEvent e, MOIS.MouseButtonID button)
         {
+            if (mouseInPanel1 && !DisableDraw)
+            {
+                switch (button)
+                {
+                    case MOIS.MouseButtonID.MB_Left:
+                        updateTexturePreview();
+                        break;
+                }
+            }
             return true;
         }
         public bool KeyPressed(MOIS.KeyEvent e)
@@ -855,7 +860,7 @@ namespace Squamster
                 if (drawPoint.X >= 0 && drawPoint.Y >= 0 && drawPoint.X <= 1 && drawPoint.Y <= 1)
                 {
 
-                    System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
+                    System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.PenColor.GetAsARGB()));
                     int x = (int)((float)drawPoint.X * ((float)picBoxWidth - 1));
                     int y = (int)((float)drawPoint.Y * ((float)picBoxHeight - 1));
 
@@ -886,12 +891,7 @@ namespace Squamster
                 LogManager.Singleton.LogMessage("Error: Draw functionality couldn't find texture: " + texturePreviewList.Images.Keys[texList.SelectedIndex]);
             }
         }       
-        private void selectColor(object sender, MouseEventArgs e)
-        {
-            DialogResult colorResult = this.colorDialog1.ShowDialog();
-            colorSelector.BackColor = colorDialog1.Color;
-            Painter.penColor.SetAsARGB((uint)colorDialog1.Color.ToArgb());
-        }
+
         private void brushScaleControl_ValueChanged(object sender, EventArgs e)
         {
             meshPainter.BrushScale = (float)brushScaleControl.Value;
@@ -918,13 +918,74 @@ namespace Squamster
 
             if( pointIsWithinPanel( origin, panelWidth, panelHeight ) && pointIsWithinPanel( mouse, panelWidth, panelHeight ) )
             {
+                if (inputKeyboard.IsKeyDown(KeyCode.KC_LSHIFT) || inputKeyboard.IsKeyDown( KeyCode.KC_RSHIFT ))
+                {
+                    mouse = setShapeSquared(origin, mouse);
+                }
+
                 System.Drawing.Graphics objGraphic = splitContainer1.Panel1.CreateGraphics();
 
 
-                System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.penColor.GetAsARGB()));
+                System.Drawing.Pen pen = new Pen(Color.FromArgb((int)Painter.PenColor.GetAsARGB()));
 
-                objGraphic.DrawLine(pen, origin.X, origin.Y, mouse.X, mouse.Y);
+                Point rectTL = new Point(System.Math.Min(origin.X, mouse.X), System.Math.Min(origin.Y, mouse.Y));
+
+                switch (meshPainter.CurrentShape)
+                {
+                    case Painter.Shapes.LINE:
+                        objGraphic.DrawLine(pen, origin.X, origin.Y, mouse.X, mouse.Y);
+                        break;
+                    case Painter.Shapes.SQUARE:
+                        objGraphic.DrawRectangle(pen, rectTL.X, rectTL.Y, System.Math.Abs(mouse.X - origin.X), System.Math.Abs(mouse.Y - origin.Y));
+                        break;
+                    case Painter.Shapes.CIRCLE:
+                        objGraphic.DrawEllipse(pen, rectTL.X, rectTL.Y, System.Math.Abs(mouse.X - origin.X), System.Math.Abs(mouse.Y - origin.Y));
+                        break;
+                    default:
+                        break;
+                }
             }
+        }
+
+        private Point setShapeSquared(Point origin, Point pos)
+        {
+            int distFromOriginX = System.Math.Abs(pos.X - origin.X);
+            int distFromOriginY = System.Math.Abs(pos.Y - origin.Y);
+
+            int maxDistance = System.Math.Max(distFromOriginX, distFromOriginY);
+
+            if (meshPainter.CurrentShape == Painter.Shapes.LINE)
+            {
+                if (distFromOriginX < (float)maxDistance / 2)
+                {
+                    pos.X = origin.X;
+                }
+                else if (distFromOriginY < (float)maxDistance / 2)
+                {
+                    pos.Y = origin.Y;
+                }
+            }
+
+            if (pos.X < origin.X)
+            {
+                pos.X = origin.X - maxDistance;
+            }
+            else if (pos.X != origin.X || meshPainter.CurrentShape != Painter.Shapes.LINE)
+            {
+                pos.X = origin.X + maxDistance;
+            }
+
+            if (pos.Y < origin.Y)
+            {
+                pos.Y = origin.Y - maxDistance;
+            }
+            else if (pos.Y != origin.Y || meshPainter.CurrentShape != Painter.Shapes.LINE)
+            {
+                pos.Y = origin.Y + maxDistance;
+            }
+
+
+            return pos;
         }
 
         private bool pointIsWithinPanel(Point point, int width, int height)
@@ -1041,7 +1102,7 @@ namespace Squamster
             addToUndo();
             BrightnessContrastControl brightnessContrastForm = new BrightnessContrastControl(this);
             brightnessContrastForm.Show();
-            meshPainter.paintMode = Painter.PaintModes.FILTER;
+            meshPainter.PaintMode = Painter.PaintModes.FILTER;
             this.menuStrip1.Enabled = false;
             Btn_Paint.Enabled = false;
             Btn_View.Enabled = false;
@@ -1056,7 +1117,7 @@ namespace Squamster
             {
                 undo();
             }
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             this.menuStrip1.Enabled = true;
             Btn_Paint.Enabled = true;
             Btn_View.Enabled = true;
@@ -1088,45 +1149,46 @@ namespace Squamster
         private void btn_Brush_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.BRUSH;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.CurrentTool = Painter.Tools.BRUSH;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Brush.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void btn_Blur_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.BLUR;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.CurrentTool = Painter.Tools.BLUR;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Blur.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void btn_Sharpen_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.SHARPEN;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.CurrentTool = Painter.Tools.SHARPEN;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Sharpen.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void btn_Burn_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.BURN;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.CurrentTool = Painter.Tools.BURN;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Burn.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void btn_Dodge_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.DODGE;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
+            meshPainter.CurrentTool = Painter.Tools.DODGE;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Dodge.BackColor = Color.FromArgb(64, 0, 0);
         }
 
         private void deactivateTools()
         {
+            hideShapes();
             btn_Blur.BackColor = Color.Black;
             btn_Brush.BackColor = Color.Black;
             btn_Sharpen.BackColor = Color.Black;
@@ -1138,10 +1200,116 @@ namespace Squamster
         private void btn_Shape_Click(object sender, EventArgs e)
         {
             deactivateTools();
-            meshPainter.currentTool = Painter.Tools.SHAPE;
-            meshPainter.paintMode = Painter.PaintModes.TOOLS;
-            meshPainter.currentShape = Painter.Shapes.LINE;
+            showShapes();
+            meshPainter.CurrentTool = Painter.Tools.SHAPE;
+            meshPainter.PaintMode = Painter.PaintModes.TOOLS;
             btn_Shape.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void deactivateShapes()
+        {
+            btn_Shapes_Ellipse.BackColor = Color.Black;
+            btn_Shapes_Line.BackColor = Color.Black;
+            btn_Shapes_Rectangle.BackColor = Color.Black;
+        }
+
+        private void hideShapes()
+        {
+            btn_Shapes_Line.Visible = false;
+            btn_Shapes_Rectangle.Visible = false;
+            btn_Shapes_Ellipse.Visible = false;
+            chk_Shapes_Fill.Visible = false;
+            shapeFillColor.Visible = false;
+        }
+
+        private void showShapes()
+        {
+            btn_Shapes_Line.Visible = true;
+            btn_Shapes_Rectangle.Visible = true;
+            btn_Shapes_Ellipse.Visible = true;
+            chk_Shapes_Fill.Visible = true;
+            shapeFillColor.Visible = true;
+        }
+
+        private void btn_Shapes_Line_Click(object sender, EventArgs e)
+        {
+            deactivateShapes();
+            meshPainter.CurrentShape = Painter.Shapes.LINE;
+            btn_Shapes_Line.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void btn_Shapes_Rectangle_Click(object sender, EventArgs e)
+        {
+            deactivateShapes();
+            meshPainter.CurrentShape = Painter.Shapes.SQUARE;
+            btn_Shapes_Rectangle.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void btn_Shapes_Ellipse_Click(object sender, EventArgs e)
+        {
+            deactivateShapes();
+            meshPainter.CurrentShape = Painter.Shapes.CIRCLE;
+            btn_Shapes_Ellipse.BackColor = Color.FromArgb(64, 0, 0);
+        }
+
+        private void selectColor(object sender, EventArgs e)
+        {
+            DisableDraw = true;
+            colorDialog1.Color = colorSelector.BackColor;
+            DialogResult colorResult = this.colorDialog1.ShowDialog();
+            colorSelector.BackColor = colorDialog1.Color;
+            ColourValue color = new ColourValue();
+            color.SetAsARGB((uint)colorDialog1.Color.ToArgb());
+            Painter.PenColor = color;
+            DisableDraw = false;
+        }
+
+        private void selectFill(object sender, EventArgs e)
+        {
+            DisableDraw = true;
+            colorDialog1.Color = shapeFillColor.BackColor;
+            DialogResult colorResult = this.colorDialog1.ShowDialog();
+            shapeFillColor.BackColor = colorDialog1.Color;
+            ColourValue color = new ColourValue();
+            color.SetAsARGB((uint)colorDialog1.Color.ToArgb());
+            Painter.FillColor = color;
+            DisableDraw = false;
+        }
+
+        private void chk_Shapes_Fill_CheckedChanged(object sender, EventArgs e)
+        {
+            meshPainter.FillShape = chk_Shapes_Fill.Checked;
+        }
+
+        private void OgreForm_MouseLeave(object sender, EventArgs e)
+        {
+            mouseInPanel1 = false;
+        }
+
+        private void splitContainer1_Panel1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (mouseInPanel1 && !DisableDraw)
+            {
+                switch( e.Button )
+                {
+                    case MouseButtons.Left:
+                        if (meshPainter.PaintMode == Painter.PaintModes.TOOLS && meshPainter.CurrentTool == Painter.Tools.SHAPE)
+                        {
+                            addToUndo();
+                            Point mousePos = PointToClient(System.Windows.Forms.Control.MousePosition);
+                            Point pos = new Point(mousePos.X, mousePos.Y - menuStrip1.Height);
+
+                            if (inputKeyboard.IsKeyDown(KeyCode.KC_LSHIFT) || inputKeyboard.IsKeyDown(KeyCode.KC_RSHIFT))
+                            {
+                                pos = setShapeSquared(meshPainter.ShapeOrigin, pos);
+                            }
+
+                            meshPainter.drawShape(meshPainter.ShapeOrigin, pos);
+                            busy = false;
+                        }
+                        break;
+                }
+            }
         }
     }
 }
