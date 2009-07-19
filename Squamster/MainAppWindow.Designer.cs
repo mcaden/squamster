@@ -48,6 +48,7 @@
             this.Btn_Paint = new System.Windows.Forms.Button();
             this.viewPanel = new System.Windows.Forms.Panel();
             this.paintPanel = new System.Windows.Forms.Panel();
+            this.btn_Shape = new System.Windows.Forms.Button();
             this.btn_Burn = new System.Windows.Forms.Button();
             this.btn_Dodge = new System.Windows.Forms.Button();
             this.btn_Sharpen = new System.Windows.Forms.Button();
@@ -79,7 +80,11 @@
             this.gaussianBlurToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sharpenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.btn_Shape = new System.Windows.Forms.Button();
+            this.btn_Shapes_Line = new System.Windows.Forms.Button();
+            this.btn_Shapes_Rectangle = new System.Windows.Forms.Button();
+            this.btn_Shapes_Ellipse = new System.Windows.Forms.Button();
+            this.shapeFillColor = new System.Windows.Forms.Panel();
+            this.chk_Shapes_Fill = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.viewPanel.SuspendLayout();
             this.paintPanel.SuspendLayout();
@@ -122,7 +127,7 @@
             this.colorSelector.Name = "colorSelector";
             this.colorSelector.Size = new System.Drawing.Size(25, 15);
             this.colorSelector.TabIndex = 12;
-            this.colorSelector.MouseUp += new System.Windows.Forms.MouseEventHandler(this.selectColor);
+            this.colorSelector.Click += new System.EventHandler(this.selectColor);
             // 
             // texList
             // 
@@ -345,7 +350,7 @@
             this.viewPanel.Location = new System.Drawing.Point(0, 0);
             this.viewPanel.Margin = new System.Windows.Forms.Padding(0);
             this.viewPanel.Name = "viewPanel";
-            this.viewPanel.Size = new System.Drawing.Size(134, 606);
+            this.viewPanel.Size = new System.Drawing.Size(143, 606);
             this.viewPanel.TabIndex = 1;
             // 
             // paintPanel
@@ -353,6 +358,11 @@
             this.paintPanel.BackColor = System.Drawing.Color.Silver;
             this.paintPanel.BackgroundImage = global::Squamster.Properties.Resources.sidebar;
             this.paintPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.paintPanel.Controls.Add(this.chk_Shapes_Fill);
+            this.paintPanel.Controls.Add(this.shapeFillColor);
+            this.paintPanel.Controls.Add(this.btn_Shapes_Ellipse);
+            this.paintPanel.Controls.Add(this.btn_Shapes_Rectangle);
+            this.paintPanel.Controls.Add(this.btn_Shapes_Line);
             this.paintPanel.Controls.Add(this.btn_Shape);
             this.paintPanel.Controls.Add(this.btn_Burn);
             this.paintPanel.Controls.Add(this.btn_Dodge);
@@ -371,8 +381,25 @@
             this.paintPanel.Location = new System.Drawing.Point(0, 0);
             this.paintPanel.Margin = new System.Windows.Forms.Padding(0);
             this.paintPanel.Name = "paintPanel";
-            this.paintPanel.Size = new System.Drawing.Size(134, 606);
+            this.paintPanel.Size = new System.Drawing.Size(143, 606);
             this.paintPanel.TabIndex = 3;
+            // 
+            // btn_Shape
+            // 
+            this.btn_Shape.BackColor = System.Drawing.Color.Black;
+            this.btn_Shape.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Shape.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Shape.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Shape.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Shape.ForeColor = System.Drawing.Color.White;
+            this.btn_Shape.Location = new System.Drawing.Point(43, 328);
+            this.btn_Shape.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Shape.Name = "btn_Shape";
+            this.btn_Shape.Size = new System.Drawing.Size(88, 24);
+            this.btn_Shape.TabIndex = 22;
+            this.btn_Shape.Text = "Shapes";
+            this.btn_Shape.UseVisualStyleBackColor = false;
+            this.btn_Shape.Click += new System.EventHandler(this.btn_Shape_Click);
             // 
             // btn_Burn
             // 
@@ -747,6 +774,7 @@
             this.splitContainer1.Panel1.Controls.Add(this.Btn_View);
             this.splitContainer1.Panel1.Controls.Add(this.statsLabel);
             this.splitContainer1.Panel1.MouseLeave += new System.EventHandler(this.splitContainer1_Panel1_MouseLeave_1);
+            this.splitContainer1.Panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.splitContainer1_Panel1_MouseUp);
             this.splitContainer1.Panel1.MouseEnter += new System.EventHandler(this.splitContainer1_Panel1_MouseEnter_1);
             // 
             // splitContainer1.Panel2
@@ -754,26 +782,84 @@
             this.splitContainer1.Panel2.Controls.Add(this.paintPanel);
             this.splitContainer1.Panel2.Controls.Add(this.viewPanel);
             this.splitContainer1.Size = new System.Drawing.Size(944, 606);
-            this.splitContainer1.SplitterDistance = 809;
+            this.splitContainer1.SplitterDistance = 800;
             this.splitContainer1.SplitterWidth = 1;
             this.splitContainer1.TabIndex = 4;
             // 
-            // btn_Shape
+            // btn_Shapes_Line
             // 
-            this.btn_Shape.BackColor = System.Drawing.Color.Black;
-            this.btn_Shape.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
-            this.btn_Shape.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
-            this.btn_Shape.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btn_Shape.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btn_Shape.ForeColor = System.Drawing.Color.White;
-            this.btn_Shape.Location = new System.Drawing.Point(43, 328);
-            this.btn_Shape.Margin = new System.Windows.Forms.Padding(0);
-            this.btn_Shape.Name = "btn_Shape";
-            this.btn_Shape.Size = new System.Drawing.Size(88, 24);
-            this.btn_Shape.TabIndex = 22;
-            this.btn_Shape.Text = "Shapes";
-            this.btn_Shape.UseVisualStyleBackColor = false;
-            this.btn_Shape.Click += new System.EventHandler(this.btn_Shape_Click);
+            this.btn_Shapes_Line.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Shapes_Line.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Shapes_Line.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Shapes_Line.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Shapes_Line.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Shapes_Line.ForeColor = System.Drawing.Color.White;
+            this.btn_Shapes_Line.Location = new System.Drawing.Point(43, 431);
+            this.btn_Shapes_Line.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Shapes_Line.Name = "btn_Shapes_Line";
+            this.btn_Shapes_Line.Size = new System.Drawing.Size(88, 24);
+            this.btn_Shapes_Line.TabIndex = 23;
+            this.btn_Shapes_Line.Text = "Line";
+            this.btn_Shapes_Line.UseVisualStyleBackColor = false;
+            this.btn_Shapes_Line.Click += new System.EventHandler(this.btn_Shapes_Line_Click);
+            // 
+            // btn_Shapes_Rectangle
+            // 
+            this.btn_Shapes_Rectangle.BackColor = System.Drawing.Color.Black;
+            this.btn_Shapes_Rectangle.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Shapes_Rectangle.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Shapes_Rectangle.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Shapes_Rectangle.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Shapes_Rectangle.ForeColor = System.Drawing.Color.White;
+            this.btn_Shapes_Rectangle.Location = new System.Drawing.Point(43, 458);
+            this.btn_Shapes_Rectangle.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Shapes_Rectangle.Name = "btn_Shapes_Rectangle";
+            this.btn_Shapes_Rectangle.Size = new System.Drawing.Size(88, 24);
+            this.btn_Shapes_Rectangle.TabIndex = 24;
+            this.btn_Shapes_Rectangle.Text = "Rectangle";
+            this.btn_Shapes_Rectangle.UseVisualStyleBackColor = false;
+            this.btn_Shapes_Rectangle.Click += new System.EventHandler(this.btn_Shapes_Rectangle_Click);
+            // 
+            // btn_Shapes_Ellipse
+            // 
+            this.btn_Shapes_Ellipse.BackColor = System.Drawing.Color.Black;
+            this.btn_Shapes_Ellipse.FlatAppearance.BorderColor = System.Drawing.Color.Gray;
+            this.btn_Shapes_Ellipse.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Black;
+            this.btn_Shapes_Ellipse.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn_Shapes_Ellipse.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_Shapes_Ellipse.ForeColor = System.Drawing.Color.White;
+            this.btn_Shapes_Ellipse.Location = new System.Drawing.Point(43, 485);
+            this.btn_Shapes_Ellipse.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_Shapes_Ellipse.Name = "btn_Shapes_Ellipse";
+            this.btn_Shapes_Ellipse.Size = new System.Drawing.Size(88, 24);
+            this.btn_Shapes_Ellipse.TabIndex = 25;
+            this.btn_Shapes_Ellipse.Text = "Ellipse";
+            this.btn_Shapes_Ellipse.UseVisualStyleBackColor = false;
+            this.btn_Shapes_Ellipse.Click += new System.EventHandler(this.btn_Shapes_Ellipse_Click);
+            // 
+            // shapeFillColor
+            // 
+            this.shapeFillColor.BackColor = System.Drawing.Color.Black;
+            this.shapeFillColor.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.shapeFillColor.ForeColor = System.Drawing.Color.White;
+            this.shapeFillColor.Location = new System.Drawing.Point(110, 518);
+            this.shapeFillColor.Name = "shapeFillColor";
+            this.shapeFillColor.Size = new System.Drawing.Size(25, 15);
+            this.shapeFillColor.TabIndex = 27;
+            this.shapeFillColor.Click += new System.EventHandler(this.selectFill);
+            // 
+            // chk_Shapes_Fill
+            // 
+            this.chk_Shapes_Fill.AutoSize = true;
+            this.chk_Shapes_Fill.BackColor = System.Drawing.Color.Black;
+            this.chk_Shapes_Fill.ForeColor = System.Drawing.Color.White;
+            this.chk_Shapes_Fill.Location = new System.Drawing.Point(30, 518);
+            this.chk_Shapes_Fill.Name = "chk_Shapes_Fill";
+            this.chk_Shapes_Fill.Size = new System.Drawing.Size(72, 17);
+            this.chk_Shapes_Fill.TabIndex = 28;
+            this.chk_Shapes_Fill.Text = "Fill Shape";
+            this.chk_Shapes_Fill.UseVisualStyleBackColor = false;
+            this.chk_Shapes_Fill.CheckedChanged += new System.EventHandler(this.chk_Shapes_Fill_CheckedChanged);
             // 
             // OgreForm
             // 
@@ -789,6 +875,7 @@
             this.Name = "OgreForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Squamster";
+            this.MouseLeave += new System.EventHandler(this.OgreForm_MouseLeave);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.viewPanel.ResumeLayout(false);
             this.viewPanel.PerformLayout();
@@ -861,6 +948,11 @@
         private System.Windows.Forms.Button btn_Burn;
         private System.Windows.Forms.Button btn_Dodge;
         private System.Windows.Forms.Button btn_Shape;
+        private System.Windows.Forms.Button btn_Shapes_Ellipse;
+        private System.Windows.Forms.Button btn_Shapes_Rectangle;
+        private System.Windows.Forms.Button btn_Shapes_Line;
+        private System.Windows.Forms.Panel shapeFillColor;
+        private System.Windows.Forms.CheckBox chk_Shapes_Fill;
 
     }
 }
